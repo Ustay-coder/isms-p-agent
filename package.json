@@ -7,12 +7,12 @@
     "isms-agent": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp -R dist/src/. dist/",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json && cp -R dist/src/. dist/",
     "test": "npm run build && node --test dist/test/**/*.test.js",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
+    "@types/node": "^22.0.0",
     "typescript": "^5.9.0"
   },
   "engines": {

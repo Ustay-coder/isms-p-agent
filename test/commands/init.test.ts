@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { initWorkspace } from "../../src/commands/init.js";
 
@@ -43,5 +44,29 @@ test("initWorkspace does not overwrite existing files", async () => {
     assert.equal(await readFile(join(dir, "isms-agent.config.json"), "utf8"), "{\"schemaVersion\":99}\n");
   } finally {
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("CLI rejects init arguments without mutating cwd", async () => {
+  for (const args of [["init", "--help"], ["init", "typo"]]) {
+    const dir = await mkdtemp(join(tmpdir(), "isms-agent-cli-"));
+    try {
+      const result = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), ...args], {
+        cwd: dir,
+        encoding: "utf8"
+      });
+
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Usage: isms-agent init/);
+
+      for (const name of ["raw", "wiki", "controls", "project", "connectors", "scans", "reports"]) {
+        await assert.rejects(stat(join(dir, name)), { code: "ENOENT" });
+      }
+      await assert.rejects(stat(join(dir, "AGENTS.md")), { code: "ENOENT" });
+      await assert.rejects(stat(join(dir, "log.md")), { code: "ENOENT" });
+      await assert.rejects(stat(join(dir, "isms-agent.config.json")), { code: "ENOENT" });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }
 });

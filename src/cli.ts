@@ -3,8 +3,9 @@ import { initWorkspace } from "./commands/init.js";
 
 async function main(argv: string[]): Promise<void> {
   const command = argv[2];
+  const args = argv.slice(3);
 
-  if (command === "init") {
+  if (command === "init" && args.length === 0) {
     await initWorkspace(process.cwd());
     return;
   }
