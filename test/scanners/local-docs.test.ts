@@ -44,6 +44,43 @@ test("scanLocalDocs indexes document filenames and markdown headings without bod
   }
 });
 
+test("scanLocalDocs redacts sensitive values from markdown headings", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-local-docs-redact-"));
+  try {
+    await mkdir(join(dir, "project"), { recursive: true });
+    await writeFile(
+      join(dir, "project", "secrets.md"),
+      [
+        "# API key sk_live_test_secret_123",
+        "## GitHub ghp_abcdefghijklmnopqrstuvwxyz123456",
+        "## Google AIzaSyASecretGoogleApiKeyValue123456",
+        "## Slack xoxb-1234567890-1234567890-secret",
+        "## AWS AKIAIOSFODNN7EXAMPLE",
+        "## Owner security.owner@example.com"
+      ].join("\n")
+    );
+
+    const signals = await scanLocalDocs(dir);
+    const serialized = JSON.stringify(signals);
+
+    for (const sensitive of [
+      "sk_live_test_secret_123",
+      "ghp_abcdefghijklmnopqrstuvwxyz123456",
+      "AIzaSyASecretGoogleApiKeyValue123456",
+      "xoxb-1234567890-1234567890-secret",
+      "AKIAIOSFODNN7EXAMPLE",
+      "security.owner@example.com"
+    ]) {
+      assert.doesNotMatch(serialized, new RegExp(sensitive.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+
+    assert.match(serialized, /API key \[REDACTED_SECRET\]/);
+    assert.match(serialized, /Owner \[REDACTED_EMAIL\]/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("scanLocal writes deterministic local scan output", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-scan-local-"));
   try {
