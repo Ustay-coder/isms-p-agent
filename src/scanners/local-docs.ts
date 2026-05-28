@@ -2,8 +2,23 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { workspaceRelativePath } from "../core/provenance.js";
 import type { ScanSignal } from "../schemas/scan.js";
+import { pathMatchesFilter, type ScanPathFilter } from "./path-filter.js";
 
-const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", ".git", "scans", "reports"]);
+const SKIPPED_DIRECTORIES = new Set([
+  ".claude",
+  ".git",
+  ".next",
+  ".open-next",
+  ".playwright-mcp",
+  ".planning",
+  ".turbo",
+  ".wrangler",
+  "coverage",
+  "dist",
+  "node_modules",
+  "reports",
+  "scans"
+]);
 const DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown"]);
 const HEADING_PATTERN = /^(#{1,6})\s+(.+?)\s*#*\s*$/gm;
@@ -23,10 +38,18 @@ const SENSITIVE_HEADING_PATTERNS = [
 interface DocumentFile {
   absolutePath: string;
   relativePath: string;
+  targetRelativePath: string;
 }
 
-export async function scanLocalDocs(root: string): Promise<ScanSignal[]> {
-  const files = (await listDocumentFiles(root)).sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+export interface LocalDocsScanOptions {
+  workspaceRoot?: string;
+  pathFilter?: ScanPathFilter;
+}
+
+export async function scanLocalDocs(root: string, options: LocalDocsScanOptions = {}): Promise<ScanSignal[]> {
+  const files = (await listDocumentFiles(root, options.workspaceRoot ?? root))
+    .filter((file) => pathMatchesFilter(file.targetRelativePath, options.pathFilter))
+    .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
   if (files.length === 0) {
     return [];
   }
@@ -74,7 +97,7 @@ export async function scanLocalDocs(root: string): Promise<ScanSignal[]> {
   ];
 }
 
-async function listDocumentFiles(root: string, current = root): Promise<DocumentFile[]> {
+async function listDocumentFiles(root: string, workspaceRoot: string, current = root): Promise<DocumentFile[]> {
   const entries = await readdir(current, { withFileTypes: true });
   const files: DocumentFile[] = [];
 
@@ -88,12 +111,16 @@ async function listDocumentFiles(root: string, current = root): Promise<Document
       if (SKIPPED_DIRECTORIES.has(entry.name)) {
         continue;
       }
-      files.push(...await listDocumentFiles(root, absolutePath));
+      files.push(...await listDocumentFiles(root, workspaceRoot, absolutePath));
       continue;
     }
 
     if (entry.isFile() && DOCUMENT_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
-      files.push({ absolutePath, relativePath: workspaceRelativePath(root, absolutePath) });
+      files.push({
+        absolutePath,
+        relativePath: workspaceRelativePath(workspaceRoot, absolutePath),
+        targetRelativePath: workspaceRelativePath(root, absolutePath)
+      });
     }
   }
 

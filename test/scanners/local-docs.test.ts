@@ -151,19 +151,121 @@ test("scanLocal writes deterministic local scan output", async () => {
   }
 });
 
-test("CLI supports scan --local only", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "isms-agent-scan-cli-"));
+test("scanLocal scopes local scanners to a target path and skips generated agent directories", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-scan-target-"));
+  try {
+    await initWorkspace(dir);
+    await mkdir(join(dir, "project", "evaluation", "src"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", ".claude"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", ".playwright-mcp"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", ".next"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", ".open-next"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", ".planning"), { recursive: true });
+    await mkdir(join(dir, "project", "marketing"), { recursive: true });
+
+    await writeFile(join(dir, "project", "evaluation", "package.json"), "{}");
+    await writeFile(join(dir, "project", "evaluation", "src", "auth.ts"), "const token = process.env.SESSION_SECRET;");
+    await writeFile(join(dir, "project", "evaluation", "SECURITY.md"), "# Authentication Policy\n");
+    await writeFile(join(dir, "project", "evaluation", ".claude", "notes.md"), "# Claude Auth Notes\n");
+    await writeFile(join(dir, "project", "evaluation", ".playwright-mcp", "trace.md"), "# Playwright Login Trace\n");
+    await writeFile(join(dir, "project", "evaluation", ".next", "build.md"), "# Generated Auth Page\n");
+    await writeFile(join(dir, "project", "evaluation", ".open-next", "worker.js"), "process.env.GENERATED_SECRET");
+    await writeFile(join(dir, "project", "evaluation", ".planning", "PROJECT.md"), "# Planning Auth Notes\n");
+    await writeFile(join(dir, "project", "marketing", "package.json"), "{}");
+    await writeFile(join(dir, "project", "marketing", "README.md"), "# Marketing Login Copy\n");
+
+    const result = await scanLocal(dir, new Date("2026-05-28T01:02:03.004Z"), { target: "project/evaluation" });
+    const serialized = JSON.stringify(result);
+
+    assert.match(serialized, /project\/evaluation\/package\.json/);
+    assert.match(serialized, /project\/evaluation\/SECURITY\.md/);
+    assert.match(serialized, /project\/evaluation\/src\/auth\.ts/);
+    assert.doesNotMatch(serialized, /project\/marketing/);
+    assert.doesNotMatch(serialized, /\.claude/);
+    assert.doesNotMatch(serialized, /\.playwright-mcp/);
+    assert.doesNotMatch(serialized, /\.next/);
+    assert.doesNotMatch(serialized, /\.open-next/);
+    assert.doesNotMatch(serialized, /\.planning/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("scanLocal rejects targets outside the workspace", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-scan-target-outside-"));
+  const outside = await mkdtemp(join(tmpdir(), "isms-agent-scan-outside-"));
   try {
     await initWorkspace(dir);
 
-    const success = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), "scan", "--local"], {
+    await assert.rejects(
+      scanLocal(dir, new Date("2026-05-28T01:02:03.004Z"), { target: outside }),
+      /inside the workspace/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("scanLocal supports target-relative include and exclude path filters", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-scan-path-filter-"));
+  try {
+    await initWorkspace(dir);
+    await mkdir(join(dir, "project", "evaluation", "src", "generated"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", "src", "__tests__"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", "specs"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", "docs"), { recursive: true });
+    await mkdir(join(dir, "project", "evaluation", "docs", "superpowers", "specs"), { recursive: true });
+
+    await writeFile(join(dir, "project", "evaluation", "src", "auth.ts"), "const token = process.env.SESSION_SECRET;");
+    await writeFile(join(dir, "project", "evaluation", "src", "generated", "auth.ts"), "const token = process.env.GENERATED_SECRET;");
+    await writeFile(join(dir, "project", "evaluation", "src", "__tests__", "auth.test.ts"), "const token = process.env.TEST_SECRET;");
+    await writeFile(join(dir, "project", "evaluation", "SECURITY.md"), "# Authentication Policy\n");
+    await writeFile(join(dir, "project", "evaluation", "specs", "AUTH.md"), "# Auth Spec\n");
+    await writeFile(join(dir, "project", "evaluation", "docs", "security.md"), "# Unselected Security Notes\n");
+    await writeFile(join(dir, "project", "evaluation", "docs", "superpowers", "specs", "noise.md"), "# Nested Spec Noise\n");
+
+    const result = await scanLocal(dir, new Date("2026-05-28T01:02:03.004Z"), {
+      target: "project/evaluation",
+      include: ["src", "SECURITY.md", "specs"],
+      exclude: ["src/generated", "__tests__"]
+    });
+    const serialized = JSON.stringify(result);
+
+    assert.match(serialized, /project\/evaluation\/src\/auth\.ts/);
+    assert.match(serialized, /project\/evaluation\/SECURITY\.md/);
+    assert.match(serialized, /project\/evaluation\/specs\/AUTH\.md/);
+    assert.doesNotMatch(serialized, /project\/evaluation\/src\/generated/);
+    assert.doesNotMatch(serialized, /project\/evaluation\/src\/__tests__/);
+    assert.doesNotMatch(serialized, /project\/evaluation\/docs/);
+    assert.doesNotMatch(serialized, /Nested Spec Noise/);
+    assert.doesNotMatch(serialized, /GENERATED_SECRET/);
+    assert.doesNotMatch(serialized, /TEST_SECRET/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("CLI supports scan --local with an optional target path", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-scan-cli-"));
+  try {
+    await initWorkspace(dir);
+    await mkdir(join(dir, "project", "evaluation"), { recursive: true });
+    await mkdir(join(dir, "project", "marketing"), { recursive: true });
+    await writeFile(join(dir, "project", "evaluation", "package.json"), "{}");
+    await writeFile(join(dir, "project", "marketing", "package.json"), "{}");
+
+    const success = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), "scan", "--local", "--target", "project/evaluation", "--include", "package.json"], {
       cwd: dir,
       encoding: "utf8"
     });
     assert.equal(success.status, 0, success.stderr);
     assert.match(success.stdout, /scans\/local-/);
+    const scan = JSON.parse(await readFile(success.stdout.trim(), "utf8"));
+    assert.match(JSON.stringify(scan), /project\/evaluation\/package\.json/);
+    assert.doesNotMatch(JSON.stringify(scan), /project\/marketing/);
 
-    for (const args of [["scan"], ["scan", "--local", "extra"], ["scan", "--github"]]) {
+    for (const args of [["scan"], ["scan", "--local", "extra"], ["scan", "--github"], ["scan", "--target", "project/evaluation"], ["scan", "--include", "project/evaluation"]]) {
       const result = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), ...args], {
         cwd: dir,
         encoding: "utf8"

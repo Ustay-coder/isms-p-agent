@@ -21,16 +21,13 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
-  if (command === "scan" && args.length === 1 && args[0] === "--local") {
-    const result = await scanLocal(process.cwd());
-    console.log(result.outputPath);
-    return;
-  }
-
   if (command === "scan") {
     const options = parseScanOptions(args);
     if (options) {
-      const result = await scanWorkspace(process.cwd(), options);
+      const cloudScanRequested = options.github || options.vercel || options.cloudflare;
+      const result = options.local && !cloudScanRequested
+        ? await scanLocal(process.cwd(), new Date(), { target: options.target, include: options.include, exclude: options.exclude })
+        : await scanWorkspace(process.cwd(), options);
       console.log(result.outputPath);
       return;
     }
@@ -73,7 +70,7 @@ async function main(argv: string[]): Promise<void> {
 
   console.error("Usage: isms-agent init");
   console.error("Usage: isms-agent ingest <raw-file>");
-  console.error("Usage: isms-agent scan --local [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
+  console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
   console.error("Usage: isms-agent report");
   console.error("Usage: isms-agent pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
   console.error("Usage: isms-agent pack validate [pack-dir]");
@@ -94,6 +91,30 @@ function parseScanOptions(args: string[]): ScanOptions | undefined {
       continue;
     }
 
+    if (arg === "--target") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) {
+        return undefined;
+      }
+      options.target = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--include" || arg === "--exclude") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) {
+        return undefined;
+      }
+      if (arg === "--include") {
+        options.include = [...(options.include ?? []), value];
+      } else {
+        options.exclude = [...(options.exclude ?? []), value];
+      }
+      index += 1;
+      continue;
+    }
+
     if (arg === "--github" || arg === "--vercel" || arg === "--cloudflare") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) {
@@ -110,6 +131,10 @@ function parseScanOptions(args: string[]): ScanOptions | undefined {
       continue;
     }
 
+    return undefined;
+  }
+
+  if ((options.target || options.include || options.exclude) && !options.local) {
     return undefined;
   }
 
