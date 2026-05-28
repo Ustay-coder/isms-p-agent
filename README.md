@@ -25,6 +25,8 @@ flowchart TD
   A["raw/ source documents"] --> B["ingest"]
   B --> C["wiki/ source indexes"]
   B --> D["controls/*.json"]
+  Q["packs/isms-p-core-v0"] --> R["pack validate"]
+  R --> D
   E["project/ operating documents"] --> F["scan --local"]
   G["local repository metadata"] --> F
   H["GitHub, Vercel, Cloudflare metadata"] --> I["read-only connector scans"]
@@ -54,6 +56,7 @@ npm install
 npm run build
 npm test
 npm link
+isms-agent pack validate
 isms-agent init
 isms-agent ingest raw/example.md
 isms-agent scan --local
@@ -94,6 +97,15 @@ The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-
 - `ISMS-P-2.5.3 사용자 인증`
 - `ISMS-P-2.5.6 접근권한 검토`
 - `ISMS-P-2.10.2 클라우드 보안`
+
+Validate the pack before copying it into a workspace:
+
+```bash
+isms-agent pack validate
+isms-agent pack validate packs/isms-p-core-v0
+```
+
+The validator rejects public-pack safety problems such as private overlay paths, raw legal profile rows used as direct `source_refs`, mismatched `pack.json` control lists, missing compiled OpenKB references, and deleted controls that are not modeled as human-reviewed residual risk.
 
 Until `isms-agent pack install` exists, copy the controls into a workspace manually:
 
