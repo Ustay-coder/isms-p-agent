@@ -63,45 +63,57 @@ export async function scanGitHub(input: GitHubInput, fetchImpl: typeof fetch = f
   }
 
   const dependabot = await firstSuccessful(fetchImpl, input.token, [
-    `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/.github/dependabot.yml`,
-    `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/.github/dependabot.yaml`
+    { url: `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/.github/dependabot.yml`, path: ".github/dependabot.yml" },
+    { url: `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/.github/dependabot.yaml`, path: ".github/dependabot.yaml" }
   ]);
-  signals.push(presenceSignal("github:dependabot-config", "github", "Dependabot configuration", dependabot, ".github/dependabot.yml"));
+  signals.push(presenceSignal("github:dependabot-config", "github", "Dependabot configuration", dependabot));
 
   const codeowners = await firstSuccessful(fetchImpl, input.token, [
-    `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/.github/CODEOWNERS`,
-    `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/CODEOWNERS`,
-    `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/docs/CODEOWNERS`
+    { url: `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/.github/CODEOWNERS`, path: ".github/CODEOWNERS" },
+    { url: `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/CODEOWNERS`, path: "CODEOWNERS" },
+    { url: `${GITHUB_API_BASE}/repos/${encodePath(repository)}/contents/docs/CODEOWNERS`, path: "docs/CODEOWNERS" }
   ]);
-  signals.push(presenceSignal("github:codeowners", "github", "CODEOWNERS", codeowners, ".github/CODEOWNERS"));
+  signals.push(presenceSignal("github:codeowners", "github", "CODEOWNERS", codeowners));
 
   return signals;
 }
 
-async function firstSuccessful(fetchImpl: typeof fetch, token: string, urls: string[]): Promise<ApiResult> {
-  let last: ApiResult = { ok: false, status: 404, body: undefined };
-  for (const url of urls) {
-    const result = await getJson(fetchImpl, url, token);
+async function firstSuccessful(fetchImpl: typeof fetch, token: string, candidates: ContentCandidate[]): Promise<ContentResult> {
+  let last: ContentResult = { result: { ok: false, status: 404, body: undefined } };
+  for (const candidate of candidates) {
+    const result = await getJson(fetchImpl, candidate.url, token);
     if (result.ok || result.status !== 404) {
-      return result;
+      return { result, path: candidate.path };
     }
-    last = result;
+    last = { result };
   }
   return last;
 }
 
-function presenceSignal(id: string, source: "github", label: string, result: ApiResult, defaultPath: string): ScanSignal {
-  if (result.ok || result.status === 404) {
+function presenceSignal(id: string, source: "github", label: string, content: ContentResult): ScanSignal {
+  if (content.result.ok || content.result.status === 404) {
+    const contentPath = stringValue(asRecord(content.result.body).path);
+    const observedPath = safeContentPath(contentPath) ?? content.path;
     return {
       id,
       source,
       basis: "observed",
-      summary: result.ok ? `${label} is present.` : `${label} was not observed.`,
-      paths: result.ok ? [defaultPath] : [],
-      metadata: { present: result.ok }
+      summary: content.result.ok ? `${label} is present.` : `${label} was not observed.`,
+      paths: content.result.ok && observedPath ? [observedPath] : [],
+      metadata: { present: content.result.ok }
     };
   }
-  return apiUncertainty(id, label, result.status, "");
+  return apiUncertainty(id, label, content.result.status, "");
+}
+
+interface ContentCandidate {
+  url: string;
+  path: string;
+}
+
+interface ContentResult {
+  result: ApiResult;
+  path?: string;
 }
 
 interface ApiResult {
@@ -145,6 +157,13 @@ function needsConfirmation(id: string, summary: string, metadata: Record<string,
 
 function encodePath(value: string): string {
   return value.split("/").map(encodeURIComponent).join("/");
+}
+
+function safeContentPath(value: string | undefined): string | undefined {
+  if (!value || value.startsWith("/") || value.includes("..")) {
+    return undefined;
+  }
+  return value;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

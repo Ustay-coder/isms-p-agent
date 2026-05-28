@@ -59,6 +59,42 @@ test("scanGitHub turns API failures into needs_confirmation signals", async () =
   assert.match(signals.map((signal) => signal.summary).join("\n"), /GitHub API returned 403/);
 });
 
+test("scanGitHub reports actual fallback paths for Dependabot and CODEOWNERS", async () => {
+  const fetchMock = async (url: string | URL | Request): Promise<Response> => {
+    const path = new URL(String(url)).pathname;
+
+    if (path === "/repos/acme/app") {
+      return jsonResponse({ visibility: "private", default_branch: "main" });
+    }
+    if (path === "/repos/acme/app/branches/main/protection") {
+      return jsonResponse({ protected: true });
+    }
+    if (path === "/repos/acme/app/actions/workflows") {
+      return jsonResponse({ total_count: 0, workflows: [] });
+    }
+    if (path === "/repos/acme/app/contents/.github/dependabot.yml") {
+      return jsonResponse({ message: "not found" }, 404);
+    }
+    if (path === "/repos/acme/app/contents/.github/dependabot.yaml") {
+      return jsonResponse({ path: ".github/dependabot.yaml", content: "do-not-copy" });
+    }
+    if (path === "/repos/acme/app/contents/.github/CODEOWNERS") {
+      return jsonResponse({ message: "not found" }, 404);
+    }
+    if (path === "/repos/acme/app/contents/CODEOWNERS") {
+      return jsonResponse({ path: "CODEOWNERS", content: "@acme/security" });
+    }
+    return jsonResponse({ message: "not found" }, 404);
+  };
+
+  const signals = await scanGitHub({ repository: "acme/app", token: TOKEN }, fetchMock);
+
+  assert.deepEqual(signals.find((signal) => signal.id === "github:dependabot-config")?.paths, [".github/dependabot.yaml"]);
+  assert.deepEqual(signals.find((signal) => signal.id === "github:codeowners")?.paths, ["CODEOWNERS"]);
+  assert.doesNotMatch(JSON.stringify(signals), new RegExp(TOKEN));
+  assert.doesNotMatch(JSON.stringify(signals), /@acme\/security/);
+});
+
 test("scanWorkspace writes cloud-only scan output and missing-token uncertainty", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-cloud-scan-"));
   const previousToken = process.env.GITHUB_TOKEN;
