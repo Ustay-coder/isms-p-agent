@@ -100,6 +100,21 @@ The direct pack sources are OpenKB `compiled/controls`, `compiled/citations`, `c
 - `ISMS-P-2.5.6 접근권한 검토`
 - `ISMS-P-2.10.2 클라우드 보안`
 
+### Generating Draft Packs from OpenKB
+
+Maintainers can generate a draft pack from a local OpenKB root:
+
+```bash
+isms-agent pack generate \
+  --openkb /path/to/09_보안_ISMS-P_openkb \
+  --pack packs/isms-p-core-v1 \
+  --controls ISMS-P-2.5.3,ISMS-P-2.5.6
+
+isms-agent pack validate packs/isms-p-core-v1
+```
+
+Generated packs are draft knowledge. Every generated control starts with `review_status: needs_human_review`, uses compiled/wiki OpenKB sources as direct source refs, and keeps `raw/legal/*` rows as cross-check references only.
+
 Validate the pack before copying it into a workspace:
 
 ```bash
