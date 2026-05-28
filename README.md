@@ -35,6 +35,9 @@ flowchart TD
   K --> L["reports/backlog.md"]
   K --> M["reports/control-gap-report.md"]
   K --> N["reports/evidence-map.md"]
+  D --> O["ask-context"]
+  J --> O
+  O --> P["Codex or Claude Code grounded answer"]
 ```
 
 The intended flow is:
@@ -55,6 +58,7 @@ isms-agent init
 isms-agent ingest raw/example.md
 isms-agent scan --local
 isms-agent report
+isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
 ```
 
 Generated workspace directories:
@@ -68,6 +72,20 @@ connectors/   connector configuration notes
 scans/        scanner JSON outputs
 reports/      Markdown backlog, gap report, and evidence map
 ```
+
+## Natural-Language Questions with Agents
+
+The CLI does not need a separate LLM API key for natural-language answers. Instead, it exposes a grounded context bundle that Codex, Claude Code, or another local coding agent can read and turn into an answer.
+
+```bash
+isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
+isms-agent ask-context "이번 주 먼저 처리할 항목은?" --markdown
+isms-agent ask-context "사용자 인증 증적은 무엇이 부족해?"
+```
+
+Default output is JSON for agent callers. `--markdown` prints the same context in a compact human-readable form.
+
+The command is read-only. It reuses the existing conservative analyzer, returns candidate evidence only, and includes answer constraints so the calling agent does not claim certification readiness from evidence existence alone.
 
 ## Safety Model
 

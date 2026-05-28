@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { parseAskContextArgs, runAskContext } from "./commands/ask-context.js";
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
 import { generateReports } from "./commands/report.js";
@@ -41,10 +42,19 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
+  if (command === "ask-context") {
+    const parsed = parseAskContextArgs(args);
+    if (parsed) {
+      process.stdout.write(await runAskContext(process.cwd(), parsed.question, parsed.options));
+      return;
+    }
+  }
+
   console.error("Usage: isms-agent init");
   console.error("Usage: isms-agent ingest <raw-file>");
   console.error("Usage: isms-agent scan --local [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
   console.error("Usage: isms-agent report");
+  console.error("Usage: isms-agent ask-context <question> [--json] [--markdown]");
   process.exitCode = 1;
 }
 
