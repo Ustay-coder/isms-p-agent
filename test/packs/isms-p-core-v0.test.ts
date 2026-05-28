@@ -63,6 +63,7 @@ test("public pack files avoid private absolute paths and credential-looking valu
     const content = await readFile(join(PACK_ROOT, file), "utf8");
     assert.doesNotMatch(content, /\/Users\//);
     assert.doesNotMatch(content, /apps\/evaluation/);
+    assert.doesNotMatch(content, /overlays\/evaluate-club/);
     assert.doesNotMatch(content, /evaluate\.club asset map/);
     assert.doesNotMatch(content, /["']?\b(?:api[_-]?key|token|secret)\b["']?\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{12,}/i);
     assert.doesNotMatch(content, /"value"\s*:\s*"[^"]*(?:api[_-]?key|token|secret)[^"]*"/i);

@@ -17,9 +17,5 @@
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.6_접근권한_검토.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md"
   ],
-  "excludedPrivateOverlayKinds": [
-    "overlays/evaluate-club/assets",
-    "overlays/evaluate-club/gaps",
-    "overlays/evaluate-club/evidence"
-  ]
+  "privateOverlaysIncluded": false
 }
