@@ -1,4 +1,4 @@
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import { stringifyJson } from "../core/json.js";
 import { readJsonl } from "../core/jsonl.js";
@@ -30,17 +30,23 @@ export async function generatePackFromOpenKb(options: GeneratePackOptions): Prom
       throw new Error(`OpenKB annex mapping is missing ${controlId}`);
     }
     assertSupportedControlId(annex.control_id);
+    assertNotMergedControl(annex);
+    const claim = claimRows.find((row) => row.control_id === controlId);
+    if (!claim) {
+      throw new Error(`OpenKB source claims are missing ${controlId}`);
+    }
 
     return buildControl({
       packName: options.packName,
       annex,
-      claim: claimRows.find((row) => row.control_id === controlId),
+      claim,
       evidence: evidenceRows.filter((row) => row.control_id === controlId),
       wikiPath: selectWikiControlFile(wikiFiles, annex),
       openkbRoot: options.openkbRoot
     });
   });
 
+  await rm(join(options.packRoot, "controls"), { recursive: true, force: true });
   await mkdir(join(options.packRoot, "controls"), { recursive: true });
   await mkdir(join(options.packRoot, "sources"), { recursive: true });
 
@@ -260,6 +266,12 @@ async function walk(root: string, files: string[]): Promise<void> {
 function assertSupportedControlId(controlId: string): void {
   if (!/^ISMS-P-\d+(?:\.\d+)+$/.test(controlId)) {
     throw new Error(`Unsupported OpenKB control_id for pack generation: ${controlId}`);
+  }
+}
+
+function assertNotMergedControl(annex: AnnexMappingRow): void {
+  if (annex.merged_into) {
+    throw new Error(`OpenKB merged control ${annex.control_id} must be reviewed before generation: merged_into ${annex.merged_into}`);
   }
 }
 

@@ -230,9 +230,94 @@ test("generatePackFromOpenKb selects the exact wiki file deterministically", asy
   }
 });
 
+test("generatePackFromOpenKb rejects controls without matching source claims", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(dir, "openkb");
+    const packRoot = join(dir, "pack");
+    await writeMinimalOpenKb(openkbRoot, {
+      controlId: "ISMS-P-2.5.3",
+      controlName: "사용자 인증",
+      wikiFileName: "ISMS-P-2.5.3_사용자_인증.md"
+    });
+    await writeFile(join(openkbRoot, "compiled", "citations", "source_claims.jsonl"), "");
+
+    await assert.rejects(
+      generatePackFromOpenKb({
+        openkbRoot,
+        packRoot,
+        packName: "generated-pack",
+        version: "0.1.0",
+        controlIds: ["ISMS-P-2.5.3"]
+      }),
+      /OpenKB source claims are missing ISMS-P-2\.5\.3/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("generatePackFromOpenKb removes stale control files when regenerating", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(process.cwd(), "test", "fixtures", "openkb");
+    const packRoot = join(dir, "isms-p-generated-v0");
+
+    await generatePackFromOpenKb({
+      openkbRoot,
+      packRoot,
+      packName: "isms-p-generated-v0",
+      version: "0.1.0",
+      controlIds: ["ISMS-P-2.5.3", "ISMS-P-2.5.6"]
+    });
+    await generatePackFromOpenKb({
+      openkbRoot,
+      packRoot,
+      packName: "isms-p-generated-v0",
+      version: "0.1.0",
+      controlIds: ["ISMS-P-2.5.3"]
+    });
+
+    const validation = await validatePack(packRoot);
+
+    assert.equal(validation.valid, true);
+    assert.equal(validation.checkedControls, 1);
+    assert.deepEqual(validation.issues, []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("generatePackFromOpenKb rejects merged controls until merge metadata is supported", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(dir, "openkb");
+    const packRoot = join(dir, "pack");
+    await writeMinimalOpenKb(openkbRoot, {
+      controlId: "ISMS-P-2.5.3",
+      controlName: "사용자 인증",
+      mergedInto: "ISMS-P-2.5.4",
+      wikiFileName: "ISMS-P-2.5.3_사용자_인증.md"
+    });
+
+    await assert.rejects(
+      generatePackFromOpenKb({
+        openkbRoot,
+        packRoot,
+        packName: "generated-pack",
+        version: "0.1.0",
+        controlIds: ["ISMS-P-2.5.3"]
+      }),
+      /OpenKB merged control ISMS-P-2\.5\.3 must be reviewed before generation/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 async function writeMinimalOpenKb(
   openkbRoot: string,
-  options: { controlId: string; controlName: string; wikiFileName: string }
+  options: { controlId: string; controlName: string; mergedInto?: string; wikiFileName: string }
 ): Promise<void> {
   await mkdir(join(openkbRoot, "compiled", "controls"), { recursive: true });
   await mkdir(join(openkbRoot, "compiled", "citations"), { recursive: true });
@@ -248,7 +333,7 @@ async function writeMinimalOpenKb(
       domain_id: "2.5",
       status: "유지",
       simplified_control_id: options.controlId,
-      merged_into: null,
+      merged_into: options.mergedInto ?? null,
       source_pages: [1]
     }) + "\n"
   );
