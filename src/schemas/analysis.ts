@@ -1,4 +1,4 @@
-import type { SourceRef } from "./control.js";
+import type { ControlPackMetadata, SourceRef } from "./control.js";
 
 export type ControlStatus = "satisfied" | "partial" | "gap" | "not_applicable" | "needs_confirmation";
 
@@ -17,4 +17,5 @@ export interface ControlAnalysisResult {
   confidence: Confidence;
   judgment_basis: JudgmentBasis;
   source_refs: SourceRef[];
+  pack?: ControlPackMetadata;
 }

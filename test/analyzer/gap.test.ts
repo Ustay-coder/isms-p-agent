@@ -143,6 +143,33 @@ test("judgment basis is preserved from the strongest matching signal", () => {
   assert.equal(result?.judgment_basis, "document-backed");
 });
 
+test("analysis preserves optional pack metadata without changing conservative judgment", () => {
+  const [result] = analyzeControls(
+    [
+      control({
+        control_id: "ISMS-P-2.5.6",
+        title: "접근권한 검토",
+        observable_signals: ["access review"],
+        required_operating_practices: ["deleted-control decision review"],
+        required_evidence: ["residual risk review record"],
+        pack: {
+          name: "isms-p-core-v0",
+          source_of_truth: "openkb",
+          openkb_control_id: "ISMS-P-2.5.6",
+          effective_status: "deleted_residual_risk",
+          review_status: "needs_human_review",
+          source_confidence: "ocr_derived"
+        }
+      })
+    ],
+    []
+  );
+
+  assert.equal(result?.status, "needs_confirmation");
+  assert.equal(result?.pack?.effective_status, "deleted_residual_risk");
+  assert.equal(result?.pack?.source_of_truth, "openkb");
+});
+
 function control(overrides: Partial<ControlKnowledge> = {}): ControlKnowledge {
   return {
     control_id: "2.5.3",

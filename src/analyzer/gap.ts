@@ -107,13 +107,14 @@ function analyzeControl(
 
 function result(
   control: ControlKnowledge,
-  analysis: Omit<ControlAnalysisResult, "control_id" | "title" | "required_evidence" | "source_refs">
+  analysis: Omit<ControlAnalysisResult, "control_id" | "title" | "required_evidence" | "source_refs" | "pack">
 ): ControlAnalysisResult {
   return {
     control_id: control.control_id,
     title: control.title,
     required_evidence: control.required_evidence,
     source_refs: control.source_refs,
+    pack: control.pack,
     ...analysis
   };
 }
