@@ -87,6 +87,26 @@ Default output is JSON for agent callers. `--markdown` prints the same context i
 
 The command is read-only. It reuses the existing conservative analyzer, returns candidate evidence only, and includes answer constraints so the calling agent does not claim certification readiness from evidence existence alone.
 
+## Control Knowledge Pack v0
+
+The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes three controls:
+
+- `ISMS-P-2.5.3 사용자 인증`
+- `ISMS-P-2.5.6 접근권한 검토`
+- `ISMS-P-2.10.2 클라우드 보안`
+
+Until `isms-agent pack install` exists, copy the controls into a workspace manually:
+
+```bash
+cp packs/isms-p-core-v0/controls/*.json /path/to/workspace/controls/
+cd /path/to/workspace
+isms-agent scan --local
+isms-agent report
+isms-agent ask-context "ISMS-P-2.10.2 클라우드 보안에서 부족한 증적은?"
+```
+
+`ISMS-P-2.5.6 접근권한 검토` is modeled as a deleted residual-risk control. The CLI should ask for residual-risk review, not treat it as a normal active-control gap.
+
 ## Safety Model
 
 Read [docs/security-model.md](docs/security-model.md) before using the CLI with real service material.
