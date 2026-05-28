@@ -64,7 +64,7 @@ test("public pack files avoid private absolute paths and credential-looking valu
     assert.doesNotMatch(content, /\/Users\//);
     assert.doesNotMatch(content, /apps\/evaluation/);
     assert.doesNotMatch(content, /evaluate\.club asset map/);
-    assert.doesNotMatch(content, /\b(?:api[_-]?key|token|secret)\b\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{12,}/i);
+    assert.doesNotMatch(content, /["']?\b(?:api[_-]?key|token|secret)\b["']?\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{12,}/i);
     assert.doesNotMatch(content, /"value"\s*:\s*"[^"]*(?:api[_-]?key|token|secret)[^"]*"/i);
   }
 });
