@@ -1,0 +1,2 @@
+{"control_id":"ISMS-P-2.4.3","source_control_id":"2.4.3","part":"2. 보호대책 요구사항","domain_id":"2.4.","domain_name":"인증 및 권한관리","control_name":"사용자 인증","detail":"정보시스템과 개인정보 및 중요정보에 대한 사용자의 접근은 안전한 인증절차와 필요에 따라 강화된 인증방식을 적용하여야 한다.","check_items":[{"check_id":"ISMS-P-2.4.3-C01","text":"안전한 사용자 인증 절차에 의해 통제하고 있는가?"}]}
+{"control_id":"ISMS-P-2.5.3","source_control_id":"2.5.3","part":"2. 보호대책 요구사항","domain_id":"2.5.","domain_name":"접근통제","control_name":"원격접근 통제","detail":"원격접근을 허용하는 경우 보호대책을 수립 이행하여야 한다.","check_items":[{"check_id":"ISMS-P-2.5.3-C01","text":"원격운영 보완대책을 마련하고 있는가?"}]}
