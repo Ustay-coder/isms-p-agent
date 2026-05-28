@@ -63,6 +63,9 @@ function factsFor(controls: RelevantControlContext[], signals: ScanSignal[]): st
     facts.push(
       `${control.control_id} ${control.title} status is ${control.status} with ${control.confidence} confidence.`
     );
+    if (control.pack?.effective_status === "deleted_residual_risk") {
+      facts.push(`${control.control_id} is a deleted residual-risk control from the OpenKB source of truth.`);
+    }
 
     for (const evidence of control.observed_evidence) {
       facts.push(`Observed candidate evidence for ${control.control_id}: ${evidence}`);

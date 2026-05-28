@@ -109,6 +109,33 @@ test("CLI prints ask-context JSON for natural language questions", async () => {
   }
 });
 
+test("ask-context exposes pack metadata for deleted residual-risk controls", async () => {
+  const dir = await workspace();
+  try {
+    await writeFile(join(dir, "controls", "ISMS-P-2.5.6.json"), stringifyJson(control({
+      control_id: "ISMS-P-2.5.6",
+      title: "접근권한 검토",
+      observable_signals: ["access review"],
+      required_operating_practices: ["residual access-review risk assessment"],
+      required_evidence: ["deleted-control applicability note"],
+      pack: {
+        name: "isms-p-core-v0",
+        source_of_truth: "openkb",
+        openkb_control_id: "ISMS-P-2.5.6",
+        effective_status: "deleted_residual_risk",
+        review_status: "needs_human_review",
+        source_confidence: "ocr_derived"
+      }
+    })));
+
+    const context = await buildAskContext(dir, "ISMS-P-2.5.6 접근권한 검토는 어떻게 봐야 해?");
+    assert.equal(context.relevantControls[0]?.pack?.effective_status, "deleted_residual_risk");
+    assert.match(context.facts.join("\n"), /deleted residual-risk control/i);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 async function workspace(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-ask-"));
   await mkdir(join(dir, "controls"), { recursive: true });
