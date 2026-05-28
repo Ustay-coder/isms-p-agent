@@ -122,14 +122,24 @@ test("scanLocal writes deterministic local scan output", async () => {
   try {
     await initWorkspace(dir);
     await writeFile(join(dir, "package.json"), "{}");
-    await writeFile(join(dir, "project", "runbook.md"), "# Incident Runbook\n");
+    await writeFile(
+      join(dir, "project", "runbook.md"),
+      [
+        "# Incident Runbook",
+        "",
+        `Do not store this known secret value: ${SECRET_VALUE}`
+      ].join("\n")
+    );
 
     const result = await scanLocal(dir, new Date("2026-05-28T01:02:03.004Z"));
     assert.equal(result.schemaVersion, 1);
     assert.equal(result.generatedAt, "2026-05-28T01:02:03.004Z");
     assert.equal(result.outputPath, join(dir, "scans", "local-2026-05-28T01-02-03-004Z.json"));
 
-    const output = JSON.parse(await readFile(result.outputPath, "utf8"));
+    const outputContent = await readFile(result.outputPath, "utf8");
+    assert.doesNotMatch(outputContent, new RegExp(SECRET_VALUE));
+
+    const output = JSON.parse(outputContent);
     assert.equal(output.generatedAt, "2026-05-28T01:02:03.004Z");
     assert.equal(output.signals.some((signal: { source: string }) => signal.source === "local-repo"), true);
     assert.equal(output.signals.some((signal: { source: string }) => signal.source === "local-docs"), true);

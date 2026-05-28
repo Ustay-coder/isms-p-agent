@@ -132,6 +132,46 @@ test("renderEvidenceMap marks not applicable controls without implying missing c
   assert.doesNotMatch(markdown, /Control owner-defined candidate evidence/i);
 });
 
+test("connector failure uncertainty remains reportable", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-connector-failure-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "2.10.4.json"), stringifyJson(control({
+      control_id: "2.10.4",
+      title: "클라우드 보안",
+      observable_signals: ["Cloudflare WAF"],
+      required_operating_practices: ["waf rule review"],
+      required_evidence: ["waf change record"],
+      source_refs: [{ sourcePath: "raw/cloud.md", sha256: "def456", excerpt: "waf" }]
+    })));
+    await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult({
+      signals: [
+        {
+          id: "cloudflare:waf",
+          source: "cloudflare",
+          basis: "needs_confirmation",
+          summary: "Cloudflare WAF API failure requires confirmation",
+          paths: [],
+          metadata: { zone: "example.com" }
+        }
+      ]
+    })));
+
+    const result = await generateReports(dir);
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+    const evidenceMap = await readFile(result.outputPaths.evidenceMap, "utf8");
+
+    assert.match(controlGap, /\*\*Status:\*\* needs_confirmation/);
+    assert.match(controlGap, /Cloudflare WAF API failure requires confirmation/);
+    assert.match(evidenceMap, /Cloudflare WAF API failure requires confirmation/);
+    assert.match(evidenceMap, /not confirmed/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("generateReports fails clearly when controls or scans are missing", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-empty-"));
   try {

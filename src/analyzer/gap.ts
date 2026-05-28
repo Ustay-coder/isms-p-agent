@@ -31,7 +31,7 @@ function analyzeControl(
   if (signals.length === 0 || signals.every((signal) => signal.basis === "needs_confirmation")) {
     return result(control, {
       status: "needs_confirmation",
-      observed_evidence: [],
+      observed_evidence: evidenceSummaries(signals),
       missing: ["scanner coverage"],
       recommended_actions: ["Collect scanner coverage for this control before judging satisfaction."],
       confidence: "low",
