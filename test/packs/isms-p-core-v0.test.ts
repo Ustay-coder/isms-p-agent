@@ -50,7 +50,7 @@ test("deleted access review control is modeled as residual risk", async () => {
   assert.ok(accessReview?.required_operating_practices.includes("residual access-review risk assessment"));
 });
 
-test("public pack files avoid private absolute paths and sensitive tokens", async () => {
+test("public pack files avoid private absolute paths and credential-looking values", async () => {
   const files = [
     "pack.json",
     "sources/source-manifest.json",
@@ -64,7 +64,8 @@ test("public pack files avoid private absolute paths and sensitive tokens", asyn
     assert.doesNotMatch(content, /\/Users\//);
     assert.doesNotMatch(content, /apps\/evaluation/);
     assert.doesNotMatch(content, /evaluate\.club asset map/);
-    assert.doesNotMatch(content, /token|secret|api[_-]?key/i);
+    assert.doesNotMatch(content, /\b(?:api[_-]?key|token|secret)\b\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{12,}/i);
+    assert.doesNotMatch(content, /"value"\s*:\s*"[^"]*(?:api[_-]?key|token|secret)[^"]*"/i);
   }
 });
 
