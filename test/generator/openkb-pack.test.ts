@@ -131,6 +131,42 @@ test("generatePackFromOpenKb writes active and deleted residual-risk controls", 
   }
 });
 
+test("generatePackFromOpenKb records raw legal conflicts without direct raw source refs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(process.cwd(), "test", "fixtures", "openkb");
+    const packRoot = join(dir, "isms-p-generated-v0");
+
+    await generatePackFromOpenKb({
+      openkbRoot,
+      packRoot,
+      packName: "isms-p-generated-v0",
+      version: "0.1.0",
+      controlIds: ["ISMS-P-2.5.3"]
+    });
+
+    const manifest = JSON.parse(await readFile(join(packRoot, "sources", "source-manifest.json"), "utf8"));
+
+    assert.equal(manifest.openkbSources.includes("raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl"), false);
+    assert.deepEqual(manifest.sourceProfileReferences, [
+      {
+        path: "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+        purpose: "source-profile cross-check; do not treat as direct control source for generated pack IDs"
+      }
+    ]);
+    assert.deepEqual(manifest.knownSourceProfileConflicts, [
+      {
+        packControlId: "ISMS-P-2.5.3",
+        packControlName: "사용자 인증",
+        rawLegalControlId: "ISMS-P-2.4.3",
+        rawLegalControlName: "사용자 인증"
+      }
+    ]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("generatePackFromOpenKb rejects path-unsafe OpenKB control IDs", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
   try {

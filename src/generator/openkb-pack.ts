@@ -8,17 +8,20 @@ import type {
   EvidenceRequirementRow,
   GeneratePackOptions,
   GeneratePackResult,
+  RawLegalRow,
   SourceClaimRow
 } from "./openkb-types.js";
 
 const ANNEX_7_2_PATH = "compiled/controls/annex_7_2_mapping.jsonl";
 const SOURCE_CLAIMS_PATH = "compiled/citations/source_claims.jsonl";
 const EVIDENCE_REQUIREMENTS_PATH = "compiled/evidence/evidence_requirements.jsonl";
+const RAW_LEGAL_PROFILE_PATH = "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl";
 
 export async function generatePackFromOpenKb(options: GeneratePackOptions): Promise<GeneratePackResult> {
   const annexRows = await readJsonl<AnnexMappingRow>(join(options.openkbRoot, ANNEX_7_2_PATH));
   const claimRows = await readJsonl<SourceClaimRow>(join(options.openkbRoot, SOURCE_CLAIMS_PATH));
   const evidenceRows = await readJsonl<EvidenceRequirementRow>(join(options.openkbRoot, EVIDENCE_REQUIREMENTS_PATH));
+  const rawLegalRows = await readOptionalJsonl<RawLegalRow>(join(options.openkbRoot, RAW_LEGAL_PROFILE_PATH));
   const wikiFiles = await findWikiControlFiles(join(options.openkbRoot, "wiki", "controls"));
 
   const selectedControls = options.controlIds.map((controlId) => {
@@ -74,8 +77,13 @@ export async function generatePackFromOpenKb(options: GeneratePackOptions): Prom
         .flatMap((control) => control.source_refs.map((sourceRef) => sourceRef.sourcePath))
         .filter((sourcePath) => sourcePath.startsWith("wiki/"))
     ]),
-    sourceProfileReferences: [],
-    knownSourceProfileConflicts: [],
+    sourceProfileReferences: rawLegalRows.length > 0 ? [
+      {
+        path: RAW_LEGAL_PROFILE_PATH,
+        purpose: "source-profile cross-check; do not treat as direct control source for generated pack IDs"
+      }
+    ] : [],
+    knownSourceProfileConflicts: detectRawLegalConflicts(selectedControls, rawLegalRows),
     privateOverlaysIncluded: false
   }));
 
@@ -258,6 +266,34 @@ function assertSupportedControlId(controlId: string): void {
 function selectWikiControlFile(paths: string[], annex: AnnexMappingRow): string | undefined {
   const expectedName = `${annex.control_id}_${annex.control_name.replace(/\s+/g, "_")}.md`;
   return paths.find((path) => basename(path) === expectedName);
+}
+
+function detectRawLegalConflicts(controls: ControlKnowledge[], rows: RawLegalRow[]): Array<{
+  packControlId: string;
+  packControlName: string;
+  rawLegalControlId: string;
+  rawLegalControlName: string;
+}> {
+  return controls.flatMap((control) => {
+    const sameNameDifferentId = rows.find((row) => row.control_name === control.title && row.control_id !== control.control_id);
+    return sameNameDifferentId ? [{
+      packControlId: control.control_id,
+      packControlName: control.title,
+      rawLegalControlId: sameNameDifferentId.control_id,
+      rawLegalControlName: sameNameDifferentId.control_name
+    }] : [];
+  });
+}
+
+async function readOptionalJsonl<T>(path: string): Promise<T[]> {
+  try {
+    return await readJsonl<T>(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
 }
 
 function normalizeOpenKbPath(openkbRoot: string, path: string): string {
