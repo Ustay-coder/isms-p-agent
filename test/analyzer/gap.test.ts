@@ -96,24 +96,41 @@ test("irrelevant controls are not_applicable only with explicit applicability an
     }
   );
 
-  assert.equal(unanswered?.status, "gap");
+  assert.equal(unanswered?.status, "needs_confirmation");
   assert.equal(answered?.status, "not_applicable");
   assert.equal(answered?.judgment_basis, "user-confirmed");
   assert.deepEqual(answered?.observed_evidence, ["Service does not use R2 storage"]);
 });
 
-test("clearly unsupported applicability inputs can mark a control not applicable", () => {
+test("positive applicability evidence plus negative sub-control signal does not mark not applicable", () => {
   const [result] = analyzeControls([control({ applicability_questions: ["Do you use Cloudflare Workers?"] })], [
     signal({
       basis: "observed",
       source: "cloudflare",
-      summary: "No Cloudflare Workers services are configured",
-      metadata: { present: false, service: "cloudflare workers" }
+      summary: "Cloudflare Workers services are configured",
+      metadata: { present: true, service: "cloudflare workers" }
+    }),
+    signal({
+      basis: "observed",
+      source: "cloudflare",
+      summary: "No Cloudflare Workers WAF binding is configured",
+      metadata: { present: false, service: "cloudflare workers waf binding" }
     })
   ]);
 
-  assert.equal(result?.status, "not_applicable");
-  assert.equal(result?.judgment_basis, "observed");
+  assert.notEqual(result?.status, "not_applicable");
+  assert.equal(result?.status, "needs_confirmation");
+  assert.equal(result?.confidence, "low");
+});
+
+test("missing matches without confirmed coverage produce needs_confirmation", () => {
+  const [result] = analyzeControls([control({ observable_signals: ["waf"], required_operating_practices: ["waf review"] })], [
+    signal({ basis: "observed", source: "local-repo", summary: "Local package metadata is present" })
+  ]);
+
+  assert.equal(result?.status, "needs_confirmation");
+  assert.equal(result?.confidence, "low");
+  assert.match(result?.missing.join("\n") ?? "", /scanner coverage/i);
 });
 
 test("judgment basis is preserved from the strongest matching signal", () => {

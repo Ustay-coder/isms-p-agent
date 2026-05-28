@@ -84,6 +84,17 @@ function analyzeControl(
     });
   }
 
+  if (applicability.applicable !== true) {
+    return result(control, {
+      status: "needs_confirmation",
+      observed_evidence: observedEvidence,
+      missing: ["scanner coverage"],
+      recommended_actions: ["Collect scanner coverage for this control before judging satisfaction."],
+      confidence: "low",
+      judgment_basis: "inferred"
+    });
+  }
+
   return result(control, {
     status: "gap",
     observed_evidence: observedEvidence,
