@@ -343,7 +343,7 @@ Create `packs/isms-p-core-v0/pack.json`:
   "publicSafety": {
     "containsPrivateServicePaths": false,
     "containsCustomerData": false,
-    "containsSecrets": false
+    "containsSensitiveCredentials": false
   }
 }
 ```
