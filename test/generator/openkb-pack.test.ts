@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { readFile, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { validatePack } from "../../src/commands/pack.js";
 import { readJsonl } from "../../src/core/jsonl.js";
+import { generatePackFromOpenKb } from "../../src/generator/openkb-pack.js";
 
 test("readJsonl parses non-empty JSONL records", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-jsonl-"));
@@ -84,3 +86,163 @@ test("OpenKB fixture wiki pages exist for generated controls", async () => {
   assert.match(deletedWiki, /control_id: ISMS-P-2\.5\.6/);
   assert.match(deletedWiki, /삭제 상태/);
 });
+
+test("generatePackFromOpenKb writes active and deleted residual-risk controls", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(process.cwd(), "test", "fixtures", "openkb");
+    const packRoot = join(dir, "isms-p-generated-v0");
+
+    const result = await generatePackFromOpenKb({
+      openkbRoot,
+      packRoot,
+      packName: "isms-p-generated-v0",
+      version: "0.1.0",
+      controlIds: ["ISMS-P-2.5.3", "ISMS-P-2.5.6"]
+    });
+
+    assert.deepEqual(result.generatedControls, ["ISMS-P-2.5.3", "ISMS-P-2.5.6"]);
+
+    const active = JSON.parse(await readFile(join(packRoot, "controls", "ISMS-P-2.5.3.json"), "utf8"));
+    assert.equal(active.control_id, "ISMS-P-2.5.3");
+    assert.equal(active.title, "사용자 인증");
+    assert.equal(active.pack.effective_status, "active");
+    assert.equal(active.pack.review_status, "needs_human_review");
+    assert.ok(active.source_refs.some((sourceRef: { sourcePath: string }) => sourceRef.sourcePath === "compiled/controls/annex_7_2_mapping.jsonl"));
+    assert.ok(active.source_refs.some((sourceRef: { sourcePath: string }) => sourceRef.sourcePath === "compiled/citations/source_claims.jsonl"));
+    assert.ok(active.source_refs.every((sourceRef: { sourcePath: string }) => !sourceRef.sourcePath.startsWith("raw/legal/")));
+    assert.deepEqual(active.required_evidence, [
+      "사용자 인증 정책·절차 문서",
+      "MFA 및 세션 인증 설정 근거"
+    ]);
+
+    const deleted = JSON.parse(await readFile(join(packRoot, "controls", "ISMS-P-2.5.6.json"), "utf8"));
+    assert.equal(deleted.control_id, "ISMS-P-2.5.6");
+    assert.equal(deleted.pack.effective_status, "deleted_residual_risk");
+    assert.equal(deleted.human_review_required, true);
+    assert.match(deleted.intent, /deleted/i);
+    assert.ok(deleted.required_operating_practices.some((practice: string) => /residual|deleted/i.test(practice)));
+
+    const validation = await validatePack(packRoot);
+    assert.equal(validation.valid, true);
+    assert.deepEqual(validation.issues, []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("generatePackFromOpenKb rejects path-unsafe OpenKB control IDs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(dir, "openkb");
+    const packRoot = join(dir, "pack");
+    await writeMinimalOpenKb(openkbRoot, {
+      controlId: "../bad",
+      controlName: "잘못된 통제",
+      wikiFileName: ".._bad_잘못된_통제.md"
+    });
+
+    await assert.rejects(
+      generatePackFromOpenKb({
+        openkbRoot,
+        packRoot,
+        packName: "bad-pack",
+        version: "0.1.0",
+        controlIds: ["../bad"]
+      }),
+      /Unsupported OpenKB control_id/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("generatePackFromOpenKb selects the exact wiki file deterministically", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
+  try {
+    const openkbRoot = join(dir, "openkb");
+    const packRoot = join(dir, "pack");
+    await writeMinimalOpenKb(openkbRoot, {
+      controlId: "ISMS-P-2.5.3",
+      controlName: "사용자 인증",
+      wikiFileName: "ISMS-P-2.5.3_사용자_인증.md"
+    });
+    await mkdir(join(openkbRoot, "wiki", "controls", "0_old"), { recursive: true });
+    await writeFile(
+      join(openkbRoot, "wiki", "controls", "0_old", "ISMS-P-2.5.3_이전_사용자_인증.md"),
+      "# stale wiki page\n"
+    );
+
+    await generatePackFromOpenKb({
+      openkbRoot,
+      packRoot,
+      packName: "generated-pack",
+      version: "0.1.0",
+      controlIds: ["ISMS-P-2.5.3"]
+    });
+
+    const active = JSON.parse(await readFile(join(packRoot, "controls", "ISMS-P-2.5.3.json"), "utf8"));
+    const wikiRefs = active.source_refs
+      .map((sourceRef: { sourcePath: string }) => sourceRef.sourcePath)
+      .filter((sourcePath: string) => sourcePath.startsWith("wiki/"));
+
+    assert.deepEqual(wikiRefs, [
+      "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md"
+    ]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+async function writeMinimalOpenKb(
+  openkbRoot: string,
+  options: { controlId: string; controlName: string; wikiFileName: string }
+): Promise<void> {
+  await mkdir(join(openkbRoot, "compiled", "controls"), { recursive: true });
+  await mkdir(join(openkbRoot, "compiled", "citations"), { recursive: true });
+  await mkdir(join(openkbRoot, "compiled", "evidence"), { recursive: true });
+  await mkdir(join(openkbRoot, "wiki", "controls", "2_보호대책_요구사항"), { recursive: true });
+
+  await writeFile(
+    join(openkbRoot, "compiled", "controls", "annex_7_2_mapping.jsonl"),
+    JSON.stringify({
+      control_id: options.controlId,
+      control_name: options.controlName,
+      part: "보호대책 요구사항",
+      domain_id: "2.5",
+      status: "유지",
+      simplified_control_id: options.controlId,
+      merged_into: null,
+      source_pages: [1]
+    }) + "\n"
+  );
+  await writeFile(
+    join(openkbRoot, "compiled", "citations", "source_claims.jsonl"),
+    JSON.stringify({
+      claim_id: "CLM-test",
+      control_id: options.controlId,
+      control_name: options.controlName,
+      confidence: "ocr_derived",
+      review_status: "needs_human_review",
+      source_path: "raw/official/test.jsonl",
+      pages: [1]
+    }) + "\n"
+  );
+  await writeFile(
+    join(openkbRoot, "compiled", "evidence", "evidence_requirements.jsonl"),
+    JSON.stringify({
+      evidence_id: "EV-test",
+      control_id: options.controlId,
+      control_name: options.controlName,
+      domain_name: "인증 및 권한관리",
+      title: "테스트 증적",
+      evidence_type: "policy",
+      automation_candidate: false,
+      acceptance_criteria: "테스트 기준"
+    }) + "\n"
+  );
+  await writeFile(
+    join(openkbRoot, "wiki", "controls", "2_보호대책_요구사항", options.wikiFileName),
+    `# ${options.controlId} ${options.controlName}\n`
+  );
+}
