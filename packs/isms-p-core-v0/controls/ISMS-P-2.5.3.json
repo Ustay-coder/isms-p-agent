@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.5.3",
+  "title": "사용자 인증",
+  "domain": "보호대책 요구사항",
+  "category": "인증 및 권한관리",
+  "requirement": "정보시스템과 중요정보 접근은 안전한 인증 절차와 필요 시 강화된 인증 방식을 통해 통제되어야 한다.",
+  "intent": "Confirm that important systems and sensitive information are protected by safe authentication procedures, stronger authentication where required, and reviewed authentication operations.",
+  "applicability_questions": [
+    "Does the service have administrator, operator, customer, evaluator, or machine accounts?",
+    "Can any important system or personal information be accessed over a network?",
+    "Are privileged users or external access paths present?"
+  ],
+  "observable_signals": [
+    "mfa",
+    "two-factor",
+    "session timeout",
+    "login failure limit",
+    "admin authentication",
+    "oauth",
+    "auth route",
+    "authentication test"
+  ],
+  "required_operating_practices": [
+    "authentication policy ownership and review cycle",
+    "authentication setting change approval",
+    "privileged or administrator MFA review",
+    "login failure and abnormal authentication review",
+    "authentication exception approval"
+  ],
+  "required_evidence": [
+    "user authentication policy or procedure",
+    "MFA and session configuration record",
+    "authentication setting change approval record",
+    "periodic authentication control review record",
+    "abnormal login or failed-login review record"
+  ],
+  "common_defects": [
+    "MFA exists for code paths but no owner or review cycle is documented",
+    "session policy exists but is not tied to a formal control owner",
+    "administrator authentication differs from normal user authentication but is not reviewed",
+    "authentication exceptions are handled informally"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.3 사용자 인증 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.5.3"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.5.3",
+    "effective_status": "active",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}
