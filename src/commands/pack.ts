@@ -1,5 +1,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
+import { generatePackFromOpenKb } from "../generator/openkb-pack.js";
+import type { GeneratePackResult } from "../generator/openkb-types.js";
 import type { ControlKnowledge, SourceRef } from "../schemas/control.js";
 
 const RAW_LEGAL_PROFILE = "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl";
@@ -19,6 +21,60 @@ export interface PackValidationResult {
   packRoot: string;
   checkedControls: number;
   issues: string[];
+}
+
+export interface PackGenerateCliOptions {
+  openkbRoot: string;
+  packRoot: string;
+  controlIds: string[];
+  version: string;
+}
+
+export function parsePackGenerateArgs(args: string[]): PackGenerateCliOptions | undefined {
+  const values = new Map<string, string>();
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--openkb" || arg === "--pack" || arg === "--controls" || arg === "--version") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) {
+        return undefined;
+      }
+      values.set(arg, value);
+      index += 1;
+      continue;
+    }
+    return undefined;
+  }
+
+  const openkbRoot = values.get("--openkb");
+  const packRoot = values.get("--pack");
+  const controls = values.get("--controls");
+  if (!openkbRoot || !packRoot || !controls) {
+    return undefined;
+  }
+
+  const controlIds = controls.split(",").map((controlId) => controlId.trim()).filter(Boolean);
+  if (controlIds.length === 0) {
+    return undefined;
+  }
+
+  return {
+    openkbRoot,
+    packRoot,
+    controlIds,
+    version: values.get("--version") ?? "0.1.0"
+  };
+}
+
+export async function generatePack(options: PackGenerateCliOptions): Promise<GeneratePackResult> {
+  const packRoot = resolve(process.cwd(), options.packRoot);
+  return generatePackFromOpenKb({
+    openkbRoot: resolve(process.cwd(), options.openkbRoot),
+    packRoot,
+    packName: basename(packRoot),
+    version: options.version,
+    controlIds: options.controlIds
+  });
 }
 
 interface PackManifest {
