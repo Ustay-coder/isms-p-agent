@@ -45,9 +45,9 @@
   "human_review_required": true,
   "source_refs": [
     {
-      "sourcePath": "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
       "sha256": "openkb-managed",
-      "excerpt": "ISMS-P-2.5.3 사용자 인증"
+      "excerpt": "ISMS-P-2.5.3 사용자 인증 status 유지"
     },
     {
       "sourcePath": "compiled/citations/source_claims.jsonl",

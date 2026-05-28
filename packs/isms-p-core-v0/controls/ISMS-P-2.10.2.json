@@ -50,9 +50,14 @@
   "human_review_required": true,
   "source_refs": [
     {
-      "sourcePath": "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
       "sha256": "openkb-managed",
-      "excerpt": "ISMS-P-2.10.2 클라우드 보안"
+      "excerpt": "ISMS-P-2.10.2 클라우드 보안 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.10.2"
     },
     {
       "sourcePath": "compiled/evidence/evidence_requirements.jsonl",

@@ -50,6 +50,52 @@ test("deleted access review control is modeled as residual risk", async () => {
   assert.ok(accessReview?.required_operating_practices.includes("residual access-review risk assessment"));
 });
 
+test("pack source references use compiled OpenKB claims as direct sources", async () => {
+  const controls = await loadPackControls();
+  for (const control of controls) {
+    assert.equal(
+      control.source_refs.some((sourceRef) => sourceRef.sourcePath === "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl"),
+      false,
+      `${control.control_id} must not cite raw legal profile rows as direct source_refs`
+    );
+    assert.equal(
+      control.source_refs.some((sourceRef) => sourceRef.sourcePath.startsWith("compiled/")),
+      true,
+      `${control.control_id} must cite compiled OpenKB sources`
+    );
+  }
+
+  const sourceManifest = JSON.parse(await readFile(join(PACK_ROOT, "sources", "source-manifest.json"), "utf8")) as {
+    openkbSources: string[];
+    sourceProfileReferences?: Array<{ path: string; purpose: string }>;
+    knownSourceProfileConflicts?: Array<{ packControlId: string; rawLegalControlId: string }>;
+  };
+
+  assert.equal(sourceManifest.openkbSources.includes("raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl"), false);
+  assert.deepEqual(sourceManifest.sourceProfileReferences, [
+    {
+      path: "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+      purpose: "source-profile cross-check; do not treat as direct control source for v0 pack IDs"
+    }
+  ]);
+  assert.deepEqual(
+    sourceManifest.knownSourceProfileConflicts?.map((conflict) => ({
+      packControlId: conflict.packControlId,
+      rawLegalControlId: conflict.rawLegalControlId
+    })),
+    [
+      {
+        packControlId: "ISMS-P-2.5.3",
+        rawLegalControlId: "ISMS-P-2.4.3"
+      },
+      {
+        packControlId: "ISMS-P-2.10.2",
+        rawLegalControlId: "ISMS-P-2.9.2"
+      }
+    ]
+  );
+});
+
 test("public pack files avoid private absolute paths and credential-looking values", async () => {
   const files = [
     "pack.json",

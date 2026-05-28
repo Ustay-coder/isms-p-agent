@@ -9,13 +9,32 @@
     "publishedAt": "2023-10-31"
   },
   "openkbSources": [
-    "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
     "compiled/controls/annex_7_2_mapping.jsonl",
     "compiled/citations/source_claims.jsonl",
     "compiled/evidence/evidence_requirements.jsonl",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.6_접근권한_검토.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md"
+  ],
+  "sourceProfileReferences": [
+    {
+      "path": "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+      "purpose": "source-profile cross-check; do not treat as direct control source for v0 pack IDs"
+    }
+  ],
+  "knownSourceProfileConflicts": [
+    {
+      "packControlId": "ISMS-P-2.5.3",
+      "packControlName": "사용자 인증",
+      "rawLegalControlId": "ISMS-P-2.4.3",
+      "rawLegalControlName": "사용자 인증"
+    },
+    {
+      "packControlId": "ISMS-P-2.10.2",
+      "packControlName": "클라우드 보안",
+      "rawLegalControlId": "ISMS-P-2.9.2",
+      "rawLegalControlName": "클라우드 보안"
+    }
   ],
   "privateOverlaysIncluded": false
 }
