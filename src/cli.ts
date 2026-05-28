@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { initWorkspace } from "./commands/init.js";
+import { ingestSource } from "./commands/ingest.js";
 
 async function main(argv: string[]): Promise<void> {
   const command = argv[2];
@@ -10,7 +11,13 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
+  if (command === "ingest" && args.length === 1) {
+    await ingestSource(process.cwd(), args[0] ?? "");
+    return;
+  }
+
   console.error("Usage: isms-agent init");
+  console.error("Usage: isms-agent ingest <raw-file>");
   process.exitCode = 1;
 }
 
