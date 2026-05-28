@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.5.6",
+  "title": "접근권한 검토",
+  "domain": "보호대책 요구사항",
+  "category": "인증 및 권한관리",
+  "requirement": "OpenKB marks this control as deleted; preserve residual-risk traceability rather than creating a normal missing-control gap.",
+  "intent": "Preserve traceability that the old access review control was deleted while confirming whether access-review duties remain through other controls, contracts, privacy obligations, or customer security requirements.",
+  "applicability_questions": [
+    "Does the user still need to answer legacy or customer questions about access review?",
+    "Do contracts, privacy obligations, or surviving access-control requirements still require periodic role review?",
+    "Has a human owner confirmed how the deleted control maps to current controls?"
+  ],
+  "observable_signals": [
+    "access review",
+    "permission review",
+    "role review",
+    "admin role",
+    "organization member",
+    "deleted control",
+    "residual risk"
+  ],
+  "required_operating_practices": [
+    "deleted-control decision review",
+    "residual access-review risk assessment",
+    "mapping to surviving controls or contractual requirements",
+    "human confirmation before treating the item as not applicable"
+  ],
+  "required_evidence": [
+    "deleted-control applicability note",
+    "residual risk review record",
+    "legal or contractual access-review requirement check",
+    "mapping record to active access control requirements"
+  ],
+  "common_defects": [
+    "treating the deleted control as if no access review is needed anywhere",
+    "creating a normal remediation gap from a deleted control",
+    "losing the historical mapping and confusing users who search for access review"
+  ],
+  "automation_potential": "none",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.6 접근권한 검토 status 삭제"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.5.6"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.5.6",
+    "effective_status": "deleted_residual_risk",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

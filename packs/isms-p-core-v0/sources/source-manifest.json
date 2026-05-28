@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sourceOfTruth": "openkb",
+  "openkbRoot": "09_보안_ISMS-P_openkb",
+  "officialFreshnessReference": {
+    "publisher": "KISA",
+    "title": "ISMS-P 세부점검항목 공지('23.10.31)",
+    "url": "https://isms.kisa.or.kr/main/ispims/notice/?boardId=bbs_0000000000000014&cntId=19&mode=view",
+    "publishedAt": "2023-10-31"
+  },
+  "openkbSources": [
+    "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+    "compiled/controls/annex_7_2_mapping.jsonl",
+    "compiled/citations/source_claims.jsonl",
+    "compiled/evidence/evidence_requirements.jsonl",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.6_접근권한_검토.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md"
+  ],
+  "excludedPrivateOverlayKinds": [
+    "overlays/evaluate-club/assets",
+    "overlays/evaluate-club/gaps",
+    "overlays/evaluate-club/evidence"
+  ]
+}
