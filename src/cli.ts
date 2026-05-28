@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { parseAskContextArgs, runAskContext } from "./commands/ask-context.js";
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
-import { validatePack } from "./commands/pack.js";
+import { generatePack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
 import { generateReports } from "./commands/report.js";
 import { scanLocal, scanWorkspace, type ScanOptions } from "./commands/scan.js";
 
@@ -44,6 +44,15 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
+  if (command === "pack" && args[0] === "generate") {
+    const parsed = parsePackGenerateArgs(args.slice(1));
+    if (parsed) {
+      const result = await generatePack(parsed);
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+  }
+
   if (command === "pack" && args[0] === "validate" && args.length <= 2) {
     const packRoot = args[1] ?? "packs/isms-p-core-v0";
     const result = await validatePack(resolve(process.cwd(), packRoot));
@@ -66,6 +75,7 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: isms-agent ingest <raw-file>");
   console.error("Usage: isms-agent scan --local [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
   console.error("Usage: isms-agent report");
+  console.error("Usage: isms-agent pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
   console.error("Usage: isms-agent pack validate [pack-dir]");
   console.error("Usage: isms-agent ask-context <question> [--json] [--markdown]");
   process.exitCode = 1;
