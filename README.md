@@ -98,12 +98,15 @@ The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-
 Until `isms-agent pack install` exists, copy the controls into a workspace manually:
 
 ```bash
-cp packs/isms-p-core-v0/controls/*.json /path/to/workspace/controls/
+mkdir -p /path/to/workspace/controls
+cp -n packs/isms-p-core-v0/controls/*.json /path/to/workspace/controls/
 cd /path/to/workspace
 isms-agent scan --local
 isms-agent report
 isms-agent ask-context "ISMS-P-2.10.2 클라우드 보안에서 부족한 증적은?"
 ```
+
+If files already exist, review them before replacing local workspace controls.
 
 `ISMS-P-2.5.6 접근권한 검토` is modeled as a deleted residual-risk control. The CLI should ask for residual-risk review, not treat it as a normal active-control gap.
 
