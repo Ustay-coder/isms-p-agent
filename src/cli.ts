@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
+import { generateReports } from "./commands/report.js";
 import { scanLocal, scanWorkspace, type ScanOptions } from "./commands/scan.js";
 
 async function main(argv: string[]): Promise<void> {
@@ -32,9 +33,18 @@ async function main(argv: string[]): Promise<void> {
     }
   }
 
+  if (command === "report" && args.length === 0) {
+    const result = await generateReports(process.cwd());
+    console.log(result.outputPaths.backlog);
+    console.log(result.outputPaths.controlGapReport);
+    console.log(result.outputPaths.evidenceMap);
+    return;
+  }
+
   console.error("Usage: isms-agent init");
   console.error("Usage: isms-agent ingest <raw-file>");
   console.error("Usage: isms-agent scan --local [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
+  console.error("Usage: isms-agent report");
   process.exitCode = 1;
 }
 
