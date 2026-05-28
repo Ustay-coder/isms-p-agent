@@ -1,4 +1,5 @@
-import { join } from "node:path";
+import { stat } from "node:fs/promises";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { scanCloudflare } from "../connectors/cloudflare.js";
 import { scanGitHub } from "../connectors/github.js";
 import { scanVercel } from "../connectors/vercel.js";
@@ -13,19 +14,29 @@ export interface LocalScanResult extends ScanResult {
 
 export interface ScanOptions {
   local?: boolean;
+  target?: string;
+  include?: string[];
+  exclude?: string[];
   github?: string;
   vercel?: string;
   cloudflare?: string;
 }
 
-export async function scanLocal(workspaceRoot: string, now = new Date()): Promise<LocalScanResult> {
+export interface LocalScanOptions {
+  target?: string;
+  include?: string[];
+  exclude?: string[];
+}
+
+export async function scanLocal(workspaceRoot: string, now = new Date(), options: LocalScanOptions = {}): Promise<LocalScanResult> {
   const generatedAt = now.toISOString();
+  const targetRoot = await resolveLocalTarget(workspaceRoot, options.target);
   const result: ScanResult = {
     schemaVersion: 1,
     generatedAt,
     signals: [
-      ...await scanLocalRepo(workspaceRoot),
-      ...await scanLocalDocs(workspaceRoot)
+      ...await scanLocalRepo(targetRoot, { workspaceRoot, pathFilter: options }),
+      ...await scanLocalDocs(targetRoot, { workspaceRoot, pathFilter: options })
     ]
   };
   const outputPath = join(workspaceRoot, "scans", `local-${safeTimestamp(generatedAt)}.json`);
@@ -38,8 +49,9 @@ export async function scanWorkspace(workspaceRoot: string, options: ScanOptions,
   const signals = [];
 
   if (options.local) {
-    signals.push(...await scanLocalRepo(workspaceRoot));
-    signals.push(...await scanLocalDocs(workspaceRoot));
+    const targetRoot = await resolveLocalTarget(workspaceRoot, options.target);
+    signals.push(...await scanLocalRepo(targetRoot, { workspaceRoot, pathFilter: options }));
+    signals.push(...await scanLocalDocs(targetRoot, { workspaceRoot, pathFilter: options }));
   }
 
   if (options.github) {
@@ -66,4 +78,21 @@ export async function scanWorkspace(workspaceRoot: string, options: ScanOptions,
 
 function safeTimestamp(isoTimestamp: string): string {
   return isoTimestamp.replaceAll(":", "-").replace(".", "-");
+}
+
+async function resolveLocalTarget(workspaceRoot: string, target?: string): Promise<string> {
+  const resolvedWorkspace = resolve(workspaceRoot);
+  const resolvedTarget = target ? resolve(resolvedWorkspace, target) : resolvedWorkspace;
+  const targetRelativePath = relative(resolvedWorkspace, resolvedTarget);
+
+  if (targetRelativePath === ".." || targetRelativePath.startsWith(`..${sep}`) || isAbsolute(targetRelativePath)) {
+    throw new Error(`Scan target must be inside the workspace: ${target}`);
+  }
+
+  const targetStat = await stat(resolvedTarget);
+  if (!targetStat.isDirectory()) {
+    throw new Error(`Scan target must be a directory: ${target}`);
+  }
+
+  return resolvedTarget;
 }

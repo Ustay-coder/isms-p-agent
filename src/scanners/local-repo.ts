@@ -2,8 +2,23 @@ import { readdir, readFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { workspaceRelativePath } from "../core/provenance.js";
 import type { ScanSignal } from "../schemas/scan.js";
+import { pathMatchesFilter, type ScanPathFilter } from "./path-filter.js";
 
-const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", ".git", "scans", "reports"]);
+const SKIPPED_DIRECTORIES = new Set([
+  ".claude",
+  ".git",
+  ".next",
+  ".open-next",
+  ".playwright-mcp",
+  ".planning",
+  ".turbo",
+  ".wrangler",
+  "coverage",
+  "dist",
+  "node_modules",
+  "reports",
+  "scans"
+]);
 const DEPENDENCY_MANIFESTS = new Set([
   "package.json",
   "package-lock.json",
@@ -52,10 +67,17 @@ const DOTENV_NAME_PATTERN = /^([A-Z_][A-Z0-9_]*)\s*=/gm;
 interface RepoFile {
   absolutePath: string;
   relativePath: string;
+  targetRelativePath: string;
 }
 
-export async function scanLocalRepo(root: string): Promise<ScanSignal[]> {
-  const files = await listRepoFiles(root);
+export interface LocalRepoScanOptions {
+  workspaceRoot?: string;
+  pathFilter?: ScanPathFilter;
+}
+
+export async function scanLocalRepo(root: string, options: LocalRepoScanOptions = {}): Promise<ScanSignal[]> {
+  const files = (await listRepoFiles(root, options.workspaceRoot ?? root))
+    .filter((file) => pathMatchesFilter(file.targetRelativePath, options.pathFilter));
   const dependencyManifestPaths = files
     .filter((file) => DEPENDENCY_MANIFESTS.has(basename(file.relativePath)))
     .map((file) => file.relativePath)
@@ -153,7 +175,7 @@ export async function scanLocalRepo(root: string): Promise<ScanSignal[]> {
   return signals;
 }
 
-async function listRepoFiles(root: string, current = root): Promise<RepoFile[]> {
+async function listRepoFiles(root: string, workspaceRoot: string, current = root): Promise<RepoFile[]> {
   const entries = await readdir(current, { withFileTypes: true });
   const files: RepoFile[] = [];
 
@@ -167,12 +189,16 @@ async function listRepoFiles(root: string, current = root): Promise<RepoFile[]> 
       if (SKIPPED_DIRECTORIES.has(entry.name)) {
         continue;
       }
-      files.push(...await listRepoFiles(root, absolutePath));
+      files.push(...await listRepoFiles(root, workspaceRoot, absolutePath));
       continue;
     }
 
     if (entry.isFile()) {
-      files.push({ absolutePath, relativePath: workspaceRelativePath(root, absolutePath) });
+      files.push({
+        absolutePath,
+        relativePath: workspaceRelativePath(workspaceRoot, absolutePath),
+        targetRelativePath: workspaceRelativePath(root, absolutePath)
+      });
     }
   }
 

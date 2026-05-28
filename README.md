@@ -60,6 +60,8 @@ isms-agent pack validate
 isms-agent init
 isms-agent ingest raw/example.md
 isms-agent scan --local
+isms-agent scan --local --target project/evaluation
+isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs --exclude __tests__
 isms-agent report
 isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
 ```
@@ -75,6 +77,8 @@ connectors/   connector configuration notes
 scans/        scanner JSON outputs
 reports/      Markdown backlog, gap report, and evidence map
 ```
+
+Use `--target <path>` when the workspace contains multiple services or copied repositories. Local scanner paths remain relative to the ISMS-P workspace root, but file discovery is limited to the target directory. Use `--include` and `--exclude` with comma-separated, target-relative paths to narrow the scan to source, specs, or operating documents. The scanner also skips common dependency, build, report, planning/cache, and agent-runtime directories such as `node_modules`, `.next`, `.open-next`, `.planning`, `.claude`, `.playwright-mcp`, `scans`, and `reports`.
 
 ## Natural-Language Questions with Agents
 
@@ -130,7 +134,7 @@ Until `isms-agent pack install` exists, copy the controls into a workspace manua
 mkdir -p /path/to/workspace/controls
 cp -n packs/isms-p-core-v0/controls/*.json /path/to/workspace/controls/
 cd /path/to/workspace
-isms-agent scan --local
+isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs
 isms-agent report
 isms-agent ask-context "ISMS-P-2.10.2 클라우드 보안에서 부족한 증적은?"
 ```
