@@ -52,6 +52,36 @@ test("validatePack rejects raw legal direct refs and private overlay paths", asy
   }
 });
 
+test("validatePack rejects any raw legal path from direct OpenKB sources", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-"));
+  try {
+    const packRoot = join(dir, "bad-pack");
+    await writeMinimalPack(packRoot, [control()]);
+    await writeFile(join(packRoot, "sources", "source-manifest.json"), stringifyJson({
+      schemaVersion: 1,
+      sourceOfTruth: "openkb",
+      openkbSources: [
+        "compiled/controls/annex_7_2_mapping.jsonl",
+        "raw/legal/other_profile.jsonl"
+      ],
+      sourceProfileReferences: [
+        {
+          path: "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+          purpose: "source-profile cross-check"
+        }
+      ],
+      privateOverlaysIncluded: false
+    }));
+
+    const result = await validatePack(packRoot);
+
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join("\n"), /must not list raw legal profile rows as direct openkbSources/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("CLI validates the default checked-in pack", () => {
   const result = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), "pack", "validate"], {
     cwd: process.cwd(),

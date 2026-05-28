@@ -94,6 +94,8 @@ The command is read-only. It reuses the existing conservative analyzer, returns 
 
 The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes three controls:
 
+The direct pack sources are OpenKB `compiled/controls`, `compiled/citations`, `compiled/evidence`, and public `wiki` notes. Raw legal profile rows such as `raw/legal/7의2...` are kept only as source-profile cross-check references because their numbering can differ from the compiled OpenKB control IDs.
+
 - `ISMS-P-2.5.3 사용자 인증`
 - `ISMS-P-2.5.6 접근권한 검토`
 - `ISMS-P-2.10.2 클라우드 보안`

@@ -98,13 +98,8 @@ function validateSourceManifest(manifest: SourceManifest | undefined, issues: st
     issues.push("source-manifest.json privateOverlaysIncluded must be false for public packs");
   }
 
-  if (manifest.openkbSources?.includes(RAW_LEGAL_PROFILE)) {
+  if (manifest.openkbSources?.some((source) => source.startsWith("raw/legal/"))) {
     issues.push("source-manifest.json must not list raw legal profile rows as direct openkbSources");
-  }
-
-  const hasRawLegalProfileReference = manifest.sourceProfileReferences?.some((reference) => reference.path === RAW_LEGAL_PROFILE) ?? false;
-  if (manifest.openkbSources?.some((source) => source.startsWith("raw/legal/")) && !hasRawLegalProfileReference) {
-    issues.push("raw legal profile sources must be declared under sourceProfileReferences");
   }
 }
 
