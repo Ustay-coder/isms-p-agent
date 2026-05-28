@@ -74,8 +74,44 @@ test("scanLocalDocs redacts sensitive values from markdown headings", async () =
       assert.doesNotMatch(serialized, new RegExp(sensitive.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     }
 
-    assert.match(serialized, /API key \[REDACTED_SECRET\]/);
-    assert.match(serialized, /Owner \[REDACTED_EMAIL\]/);
+    assert.match(serialized, /\[REDACTED_HEADING\]/);
+    assert.doesNotMatch(serialized, /API key/);
+    assert.doesNotMatch(serialized, /Owner security/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("scanLocalDocs suppresses generic sensitive markdown headings", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-local-docs-sensitive-headings-"));
+  try {
+    await mkdir(join(dir, "project"), { recursive: true });
+    await writeFile(
+      join(dir, "project", "headings.md"),
+      [
+        "# Public Security Overview",
+        "## Production password hunter2",
+        "## Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+        "## Customer Acme incident",
+        "## Private endpoint https://private.example.com/reset"
+      ].join("\n")
+    );
+
+    const signals = await scanLocalDocs(dir);
+    const serialized = JSON.stringify(signals);
+
+    assert.match(serialized, /Public Security Overview/);
+    assert.match(serialized, /\[REDACTED_HEADING\]/);
+    for (const sensitive of [
+      "Production password hunter2",
+      "hunter2",
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+      "Customer Acme incident",
+      "Acme",
+      "https://private.example.com/reset"
+    ]) {
+      assert.doesNotMatch(serialized, new RegExp(sensitive.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

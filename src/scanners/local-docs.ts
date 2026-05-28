@@ -7,13 +7,17 @@ const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", ".git", "scans", "r
 const DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown"]);
 const HEADING_PATTERN = /^(#{1,6})\s+(.+?)\s*#*\s*$/gm;
-const SENSITIVE_HEADING_PATTERNS: Array<[RegExp, string]> = [
-  [/\bsk_(?:live|test)_[A-Za-z0-9_-]+\b/g, "[REDACTED_SECRET]"],
-  [/\bghp_[A-Za-z0-9_]+\b/g, "[REDACTED_SECRET]"],
-  [/\bAIza[A-Za-z0-9_-]+\b/g, "[REDACTED_SECRET]"],
-  [/\bxoxb-[A-Za-z0-9-]+\b/g, "[REDACTED_SECRET]"],
-  [/\bAKIA[A-Z0-9]{16}\b/g, "[REDACTED_SECRET]"],
-  [/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED_EMAIL]"]
+const REDACTED_HEADING = "[REDACTED_HEADING]";
+const SENSITIVE_HEADING_PATTERNS = [
+  /\b(password|passwd|secret|token|apikey|bearer|jwt|private|customer|client|incident)\b/i,
+  /\bapi\s+key\b/i,
+  /\bsk_(?:live|test)_[A-Za-z0-9_-]+\b/,
+  /\bghp_[A-Za-z0-9_]+\b/,
+  /\bAIza[A-Za-z0-9_-]+\b/,
+  /\bxoxb-[A-Za-z0-9-]+\b/,
+  /\bAKIA[A-Z0-9]{16}\b/,
+  /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i,
+  /\b(?:https?:\/\/|www\.)\S+\b/i
 ];
 
 interface DocumentFile {
@@ -101,8 +105,7 @@ function isMarkdownFile(file: DocumentFile): boolean {
 }
 
 function redactHeading(heading: string): string {
-  return SENSITIVE_HEADING_PATTERNS.reduce(
-    (redacted, [pattern, replacement]) => redacted.replace(pattern, replacement),
-    heading
-  );
+  return SENSITIVE_HEADING_PATTERNS.some((pattern) => pattern.test(heading))
+    ? REDACTED_HEADING
+    : heading;
 }
