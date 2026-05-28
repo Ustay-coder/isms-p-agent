@@ -3,6 +3,17 @@ import { markdownTable } from "./markdown.js";
 
 export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
   const rows = [...analyses].sort(compareControlResults).flatMap((result) => {
+    if (result.status === "not_applicable") {
+      return [[
+        `${result.control_id} ${result.title}`,
+        "Not applicable",
+        notApplicableBasis(result),
+        "not applicable",
+        "not applicable",
+        "Review applicability rationale if scope changes."
+      ]];
+    }
+
     const candidateEvidence = result.required_evidence.length > 0 ? result.required_evidence : ["Control owner-defined candidate evidence"];
     return candidateEvidence.map((evidence) => [
       `${result.control_id} ${result.title}`,
@@ -26,6 +37,10 @@ export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
       "Human review needed"
     ], rows)
   ].join("\n\n") + "\n";
+}
+
+function notApplicableBasis(result: ControlAnalysisResult): string {
+  return result.observed_evidence.length > 0 ? result.observed_evidence.join("; ") : "Applicability review marked this control not applicable";
 }
 
 function whereEvidenceMightComeFrom(result: ControlAnalysisResult): string {

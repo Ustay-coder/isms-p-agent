@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { analyzeControls } from "../analyzer/gap.js";
 import { renderBacklog } from "../reports/backlog.js";
@@ -58,12 +58,31 @@ async function loadLatestScan(workspaceRoot: string): Promise<ScanResult> {
     throw new Error("No scan JSON files found in scans/. Run isms-agent scan before report.");
   }
 
-  const latestName = names.at(-1);
-  if (!latestName) {
+  const scanFiles = [];
+  for (const name of names) {
+    const path = join(scansDir, name);
+    const content = await readFile(path, "utf8");
+    const scan = JSON.parse(content) as ScanResult;
+    const generatedAtMs = Date.parse(scan.generatedAt);
+    const fallbackMtimeMs = (await stat(path)).mtimeMs;
+    scanFiles.push({
+      name,
+      scan,
+      sortTimeMs: Number.isFinite(generatedAtMs) ? generatedAtMs : fallbackMtimeMs
+    });
+  }
+
+  scanFiles.sort((left, right) => {
+    const timeComparison = left.sortTimeMs - right.sortTimeMs;
+    return timeComparison === 0 ? left.name.localeCompare(right.name, "en") : timeComparison;
+  });
+
+  const latest = scanFiles.at(-1);
+  if (!latest) {
     throw new Error("No scan JSON files found in scans/. Run isms-agent scan before report.");
   }
 
-  return JSON.parse(await readFile(join(scansDir, latestName), "utf8")) as ScanResult;
+  return latest.scan;
 }
 
 async function jsonFileNames(directory: string): Promise<string[]> {

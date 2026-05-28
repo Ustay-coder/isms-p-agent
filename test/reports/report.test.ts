@@ -5,6 +5,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { generateReports } from "../../src/commands/report.js";
 import { stringifyJson } from "../../src/core/json.js";
+import { renderEvidenceMap } from "../../src/reports/evidence-map.js";
+import type { ControlAnalysisResult } from "../../src/schemas/analysis.js";
 import type { ControlKnowledge } from "../../src/schemas/control.js";
 import type { ScanResult } from "../../src/schemas/scan.js";
 
@@ -74,6 +76,62 @@ test("generateReports writes deterministic backlog, control gap, and evidence ma
   }
 });
 
+test("generateReports selects the latest scan by generatedAt instead of filename order", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-latest-scan-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "2.5.3.json"), stringifyJson(control()));
+    await writeFile(join(dir, "scans", "scan-2026-05-27T00-00-00-000Z.json"), stringifyJson(scanResult({
+      generatedAt: "2026-05-27T00:00:00.000Z",
+      signals: []
+    })));
+    await writeFile(join(dir, "scans", "local-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult({
+      generatedAt: "2026-05-28T00:00:00.000Z",
+      signals: [
+        {
+          id: "newer-local-branch-protection",
+          source: "github",
+          basis: "observed",
+          summary: "Newer local scan saw GitHub branch protection",
+          paths: [".github/settings.yml"],
+          metadata: {}
+        }
+      ]
+    })));
+
+    const result = await generateReports(dir);
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+
+    assert.match(controlGap, /Newer local scan saw GitHub branch protection/);
+    assert.match(controlGap, /\*\*Status:\*\* partial/);
+    assert.doesNotMatch(controlGap, /\*\*Status:\*\* needs_confirmation/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("renderEvidenceMap marks not applicable controls without implying missing candidate evidence", () => {
+  const markdown = renderEvidenceMap([
+    analysisResult({
+      status: "not_applicable",
+      observed_evidence: ["Service does not use R2 storage"],
+      missing: [],
+      recommended_actions: [],
+      required_evidence: ["R2 access review record"],
+      confidence: "high",
+      judgment_basis: "user-confirmed"
+    })
+  ]);
+
+  assert.match(markdown, /not applicable/i);
+  assert.match(markdown, /Service does not use R2 storage/);
+  assert.doesNotMatch(markdown, /not confirmed/i);
+  assert.doesNotMatch(markdown, /missing/i);
+  assert.doesNotMatch(markdown, /Control owner-defined candidate evidence/i);
+});
+
 test("generateReports fails clearly when controls or scans are missing", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-empty-"));
   try {
@@ -109,7 +167,7 @@ function control(overrides: Partial<ControlKnowledge> = {}): ControlKnowledge {
   };
 }
 
-function scanResult(): ScanResult {
+function scanResult(overrides: Partial<ScanResult> = {}): ScanResult {
   return {
     schemaVersion: 1,
     generatedAt: "2026-05-28T00:00:00.000Z",
@@ -138,6 +196,23 @@ function scanResult(): ScanResult {
         paths: ["project/change-approval.md"],
         metadata: {}
       }
-    ]
+    ],
+    ...overrides
+  };
+}
+
+function analysisResult(overrides: Partial<ControlAnalysisResult> = {}): ControlAnalysisResult {
+  return {
+    control_id: "2.10.4",
+    title: "클라우드 보안",
+    status: "partial",
+    observed_evidence: [],
+    missing: [],
+    recommended_actions: [],
+    required_evidence: [],
+    confidence: "medium",
+    judgment_basis: "observed",
+    source_refs: [{ sourcePath: "raw/cloud.md", sha256: "def456", excerpt: "cloud" }],
+    ...overrides
   };
 }
