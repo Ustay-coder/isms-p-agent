@@ -172,6 +172,43 @@ test("connector failure uncertainty remains reportable", async () => {
   }
 });
 
+test("reports explain deleted residual-risk controls without normal gap wording", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-deleted-control-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "ISMS-P-2.5.6.json"), stringifyJson(control({
+      control_id: "ISMS-P-2.5.6",
+      title: "접근권한 검토",
+      observable_signals: ["access review"],
+      required_operating_practices: ["residual access-review risk assessment"],
+      required_evidence: ["deleted-control applicability note"],
+      pack: {
+        name: "isms-p-core-v0",
+        source_of_truth: "openkb",
+        openkb_control_id: "ISMS-P-2.5.6",
+        effective_status: "deleted_residual_risk",
+        review_status: "needs_human_review",
+        source_confidence: "ocr_derived"
+      }
+    })));
+    await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult({ signals: [] })));
+
+    const result = await generateReports(dir);
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+    const evidenceMap = await readFile(result.outputPaths.evidenceMap, "utf8");
+    const backlog = await readFile(result.outputPaths.backlog, "utf8");
+
+    assert.match(controlGap, /Deleted residual-risk control/);
+    assert.match(controlGap, /OpenKB marks this control as deleted/);
+    assert.match(evidenceMap, /Deleted control residual-risk review/);
+    assert.match(backlog, /Review residual risk for deleted control ISMS-P-2\.5\.6 접근권한 검토/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("generateReports fails clearly when controls or scans are missing", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-empty-"));
   try {

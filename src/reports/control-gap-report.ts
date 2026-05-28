@@ -8,6 +8,9 @@ export function renderControlGapReport(analyses: ControlAnalysisResult[]): strin
     `**Status:** ${result.status}`,
     `**Confidence:** ${result.confidence}`,
     `**Basis:** ${result.judgment_basis}`,
+    isDeletedResidualRisk(result)
+      ? "**Pack note:** Deleted residual-risk control. OpenKB marks this control as deleted; review residual obligations before treating it as not applicable."
+      : undefined,
     "**Observed candidate evidence:**",
     markdownList(result.observed_evidence, "No candidate evidence observed."),
     "**Missing items:**",
@@ -18,7 +21,7 @@ export function renderControlGapReport(analyses: ControlAnalysisResult[]): strin
     markdownList(result.required_evidence, "No required evidence recorded."),
     "**Source refs:**",
     sourceRefList(result.source_refs)
-  ].join("\n\n"));
+  ].filter((line) => line !== undefined).join("\n\n"));
 
   return [
     "# Control Gap Report",
@@ -29,4 +32,8 @@ export function renderControlGapReport(analyses: ControlAnalysisResult[]): strin
 
 function compareControlResults(left: ControlAnalysisResult, right: ControlAnalysisResult): number {
   return left.control_id.localeCompare(right.control_id, "en");
+}
+
+function isDeletedResidualRisk(result: ControlAnalysisResult): boolean {
+  return result.pack?.effective_status === "deleted_residual_risk";
 }

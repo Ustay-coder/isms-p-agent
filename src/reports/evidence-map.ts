@@ -3,6 +3,17 @@ import { markdownTable } from "./markdown.js";
 
 export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
   const rows = [...analyses].sort(compareControlResults).flatMap((result) => {
+    if (isDeletedResidualRisk(result)) {
+      return [[
+        `${result.control_id} ${result.title}`,
+        "Deleted control residual-risk review",
+        "OpenKB source mapping, applicability note, residual risk review record",
+        "not confirmed",
+        "not a normal active-control gap",
+        "Confirm residual legal, contractual, or surviving-control obligations."
+      ]];
+    }
+
     if (result.status === "not_applicable") {
       return [[
         `${result.control_id} ${result.title}`,
@@ -85,4 +96,8 @@ function humanReviewNeeded(result: ControlAnalysisResult): string {
 
 function compareControlResults(left: ControlAnalysisResult, right: ControlAnalysisResult): number {
   return left.control_id.localeCompare(right.control_id, "en");
+}
+
+function isDeletedResidualRisk(result: ControlAnalysisResult): boolean {
+  return result.pack?.effective_status === "deleted_residual_risk";
 }

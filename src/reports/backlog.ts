@@ -36,6 +36,20 @@ function toBacklogItems(result: ControlAnalysisResult): BacklogItem[] {
     return [];
   }
 
+  if (isDeletedResidualRisk(result)) {
+    return [{
+      horizon: "this week",
+      task: `Review residual risk for deleted control ${result.control_id} ${result.title}`,
+      status: result.status,
+      reason: "OpenKB marks this control as deleted; confirm whether legal, contractual, or surviving-control obligations remain.",
+      controlIds: [result.control_id],
+      owner: "security owner with compliance owner",
+      priority: "medium",
+      expectedEvidence: "Deleted-control applicability note and residual risk review record.",
+      humanApproval: "Required before treating the control as not applicable."
+    }];
+  }
+
   if (result.status === "needs_confirmation") {
     return [{
       horizon: "this week",
@@ -105,4 +119,8 @@ function expectedEvidence(result: ControlAnalysisResult): string {
   return result.required_evidence.length > 0
     ? result.required_evidence.join(", ")
     : "Candidate evidence agreed by the control owner.";
+}
+
+function isDeletedResidualRisk(result: ControlAnalysisResult): boolean {
+  return result.pack?.effective_status === "deleted_residual_risk";
 }
