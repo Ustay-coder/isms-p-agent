@@ -1,5 +1,5 @@
 import { CloudflareApiClient, type CloudflareApiResult } from "./cloudflare-api.js";
-import { normalizeCloudflareProducts, type CloudflareProduct } from "./cloudflare-products.js";
+import { isAccountCloudflareProduct, normalizeCloudflareProducts, type CloudflareProduct } from "./cloudflare-products.js";
 import { CLOUDFLARE_REQUIREMENTS, cloudflareNeedsConfirmation, cloudflareObserved, permissionMetadata } from "./cloudflare-safety.js";
 import type { ScanSignal } from "../schemas/scan.js";
 
@@ -132,7 +132,103 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
     }
   }
 
+  for (const product of products.filter(isAccountCloudflareProduct)) {
+    signals.push(...await scanAccountProduct(client, product, input.accountId, zoneResult.zoneId));
+  }
+
   return signals;
+}
+
+async function scanAccountProduct(
+  client: CloudflareApiClient,
+  product: CloudflareProduct,
+  accountId: string | undefined,
+  zoneId: string
+): Promise<ScanSignal[]> {
+  if (!accountId) {
+    return [cloudflareNeedsConfirmation(`cloudflare:${product}`, `Cloudflare ${product} scan requires --cloudflare-account.`, {
+      product,
+      endpoint: "account",
+      permission_status: "missing_account_id",
+      requirement_ids: requirementIdsForProduct(product),
+      available: false
+    })];
+  }
+
+  if (product === "workers") {
+    return [await scanWorkers(client, accountId)];
+  }
+  if (product === "r2") {
+    return [await scanR2(client, accountId)];
+  }
+  if (product === "hyperdrive") {
+    return [await scanHyperdrive(client, accountId)];
+  }
+  if (product === "api-gateway") {
+    return [await scanApiGateway(client, zoneId)];
+  }
+  return [];
+}
+
+async function scanWorkers(client: CloudflareApiClient, accountId: string): Promise<ScanSignal> {
+  const result = await client.list(`/accounts/${encodeURIComponent(accountId)}/workers/scripts`);
+  if (!result.ok) {
+    return accountProductFailure("workers", "/accounts/{account_id}/workers/scripts", result.status);
+  }
+  return cloudflareObserved("cloudflare:workers", `Cloudflare Workers metadata shows ${result.items.length} script(s).`, {
+    product: "workers",
+    endpoint: "/accounts/{account_id}/workers/scripts",
+    permission_status: "available",
+    requirement_ids: requirementIdsForProduct("workers"),
+    available: result.items.length > 0,
+    count: result.items.length
+  });
+}
+
+async function scanR2(client: CloudflareApiClient, accountId: string): Promise<ScanSignal> {
+  const result = await client.get(`/accounts/${encodeURIComponent(accountId)}/r2/buckets`);
+  if (!result.ok) {
+    return accountProductFailure("r2", "/accounts/{account_id}/r2/buckets", result.status);
+  }
+  const bucketCount = countR2Buckets(result.body);
+  return cloudflareObserved("cloudflare:r2", `Cloudflare R2 metadata shows ${bucketCount} bucket(s).`, {
+    product: "r2",
+    endpoint: "/accounts/{account_id}/r2/buckets",
+    permission_status: "available",
+    requirement_ids: requirementIdsForProduct("r2"),
+    available: bucketCount > 0,
+    count: bucketCount
+  });
+}
+
+async function scanHyperdrive(client: CloudflareApiClient, accountId: string): Promise<ScanSignal> {
+  const result = await client.list(`/accounts/${encodeURIComponent(accountId)}/hyperdrive/configs`);
+  if (!result.ok) {
+    return accountProductFailure("hyperdrive", "/accounts/{account_id}/hyperdrive/configs", result.status);
+  }
+  return cloudflareObserved("cloudflare:hyperdrive", `Cloudflare Hyperdrive metadata shows ${result.items.length} config(s).`, {
+    product: "hyperdrive",
+    endpoint: "/accounts/{account_id}/hyperdrive/configs",
+    permission_status: "available",
+    requirement_ids: requirementIdsForProduct("hyperdrive"),
+    available: result.items.length > 0,
+    count: result.items.length
+  });
+}
+
+async function scanApiGateway(client: CloudflareApiClient, zoneId: string): Promise<ScanSignal> {
+  const result = await client.list(`/zones/${encodeURIComponent(zoneId)}/api_gateway/discovery/operations`);
+  if (!result.ok) {
+    return accountProductFailure("api-gateway", "/zones/{zone_id}/api_gateway/discovery/operations", result.status);
+  }
+  return cloudflareObserved("cloudflare:api-gateway", `Cloudflare API Gateway metadata shows ${result.items.length} discovered operation(s).`, {
+    product: "api-gateway",
+    endpoint: "/zones/{zone_id}/api_gateway/discovery/operations",
+    permission_status: "available",
+    requirement_ids: requirementIdsForProduct("api-gateway"),
+    available: result.items.length > 0,
+    count: result.items.length
+  });
 }
 
 async function findZone(client: CloudflareApiClient, zoneInput: string): Promise<{ result: CloudflareApiResult; zoneId?: string; status?: string }> {
@@ -163,11 +259,31 @@ function apiUncertainty(id: string, product: string, label: string, endpoint: st
   });
 }
 
+function accountProductFailure(product: CloudflareProduct, endpoint: string, status: number): ScanSignal {
+  const statusText = status === 0 ? "network error" : `${status}`;
+  return cloudflareNeedsConfirmation(`cloudflare:${product}`, `Cloudflare API returned ${statusText} while checking ${product} metadata.`, {
+    ...permissionMetadata(product, endpoint, requirementIdsForProduct(product)),
+    available: false
+  });
+}
+
 function requirementIdsForProduct(product: string): string[] {
   if (product === "access") {
     return [CLOUDFLARE_REQUIREMENTS.adminAccessReview];
   }
+  if (product === "workers" || product === "r2" || product === "hyperdrive" || product === "api-gateway") {
+    return [CLOUDFLARE_REQUIREMENTS.configExport, CLOUDFLARE_REQUIREMENTS.changeApproval];
+  }
   return [CLOUDFLARE_REQUIREMENTS.configExport];
+}
+
+function countR2Buckets(body: unknown): number {
+  const result = asRecord(asRecord(body).result);
+  const buckets = arrayValue(result.buckets);
+  if (buckets.length > 0) {
+    return buckets.length;
+  }
+  return arrayValue(asRecord(body).result).length;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
