@@ -19,7 +19,7 @@ The first expansion batch is:
 ```text
 ISMS-P-2.1.1 정책의 유지관리
 ISMS-P-2.3.1 외부자 현황 관리
-ISMS-P-2.4.2 보안 교육
+ISMS-P-2.2.4 인식제고 및 교육훈련
 ISMS-P-2.9.4 로그 및 접속기록 관리
 ISMS-P-2.10.1 보안시스템 운영
 ```
@@ -120,9 +120,9 @@ Expected evidence direction:
 - access or data-processing relationship,
 - periodic review record.
 
-### ISMS-P-2.4.2 보안 교육
+### ISMS-P-2.2.4 인식제고 및 교육훈련
 
-This control introduces recurring people/process evidence. It prevents the pack from becoming only a technical scanner.
+This control introduces recurring people/process evidence. It prevents the pack from becoming only a technical scanner. OpenKB identifies the training control as `ISMS-P-2.2.4 인식제고 및 교육훈련`; `ISMS-P-2.4.2` is `출입통제` and is not part of this first training-oriented batch.
 
 Expected evidence direction:
 
@@ -179,7 +179,7 @@ Run the OpenKB generator into a draft pack:
 node dist/cli.js pack generate \
   --openkb /Users/jeean/Documents/obsidian-vault/evaluate.club/09_보안_ISMS-P_openkb \
   --pack packs/isms-p-core-v1 \
-  --controls ISMS-P-2.1.1,ISMS-P-2.3.1,ISMS-P-2.4.2,ISMS-P-2.9.4,ISMS-P-2.10.1 \
+  --controls ISMS-P-2.1.1,ISMS-P-2.2.4,ISMS-P-2.3.1,ISMS-P-2.9.4,ISMS-P-2.10.1 \
   --version 0.2.0
 ```
 
