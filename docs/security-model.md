@@ -24,6 +24,8 @@ Cloudflare API tokens must be supplied through `CLOUDFLARE_API_TOKEN`. The token
 
 Scanner output is not evidence acceptance. `isms-agent evidence index` turns scan signals into candidate evidence IDs, and `isms-agent evidence review` records human decisions in `reviews/evidence-review.jsonl`.
 
+`isms-agent evidence review-cloudflare` is a local-only bulk review overlay for Cloudflare scanner evidence. It reads `evidence/index.jsonl`, writes append-only records to `reviews/evidence-review.jsonl`, and does not call Cloudflare APIs. Bulk Cloudflare review may write `needs_followup` or explicit `rejected` decisions, but it must not write `accepted`; accepted decisions require a separate manual review of operating evidence.
+
 The default workspace keeps real evidence local:
 
 - `evidence/private/` for real evidence files,

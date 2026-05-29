@@ -57,6 +57,38 @@ export interface EvidenceReviewResult {
   record: EvidenceReviewRecord;
 }
 
+export const CLOUDFLARE_BULK_ACCEPTED_ERROR = "Cloudflare bulk review cannot auto-accept scanner evidence. Use evidence review <evidence-id> for a manual accepted decision.";
+export const DEFAULT_CLOUDFLARE_REVIEW_RATIONALE = "Cloudflare configuration was observed by a read-only connector, but operating evidence is still required before this requirement can be treated as satisfied.";
+
+export interface CloudflareEvidenceReviewOptions {
+  decision?: ReviewDecision;
+  rationale?: string;
+  reviewer?: string;
+  dryRun?: boolean;
+  reviewedAt?: Date;
+}
+
+export interface CloudflareEvidenceReviewResult {
+  outputPath?: string;
+  reviewedEvidence: number;
+  reviewRecords: number;
+  skippedEvidence: number;
+  decision: "needs_followup" | "rejected";
+  preview: CloudflareEvidenceReviewPreview[];
+  records: EvidenceReviewRecord[];
+  skipped: Array<{ evidence_id: string; reason: string }>;
+}
+
+export interface CloudflareEvidenceReviewPreview {
+  evidence_id: string;
+  title?: string;
+  summary?: string;
+  requirement_ids?: string[];
+  decision: "needs_followup" | "rejected";
+  eligible: boolean;
+  skip_reason?: string;
+}
+
 export interface PublicEvidenceExportResult {
   outputPath: string;
   exportedEvidence: number;
@@ -119,6 +151,89 @@ export async function reviewEvidence(
   await mkdir(join(workspaceRoot, "reviews"), { recursive: true });
   await appendFile(outputPath, JSON.stringify(record) + "\n");
   return { outputPath, record };
+}
+
+export async function reviewCloudflareEvidence(
+  workspaceRoot: string,
+  options: CloudflareEvidenceReviewOptions = {}
+): Promise<CloudflareEvidenceReviewResult> {
+  const requestedDecision = options.decision ?? "needs_followup";
+  if (requestedDecision === "accepted") {
+    throw new Error(CLOUDFLARE_BULK_ACCEPTED_ERROR);
+  }
+
+  const decision: "needs_followup" | "rejected" = requestedDecision;
+  const rationale = options.rationale ?? DEFAULT_CLOUDFLARE_REVIEW_RATIONALE;
+  if (decision === "rejected" && !rationale.trim()) {
+    throw new Error("Cloudflare rejected bulk review requires --rationale.");
+  }
+  if (!rationale.trim()) {
+    throw new Error("Cloudflare bulk review requires a non-empty rationale.");
+  }
+
+  const evidence = await loadEvidenceIndex(workspaceRoot);
+  const acceptedReviewKeys = await latestAcceptedReviewKeys(workspaceRoot);
+  const records: EvidenceReviewRecord[] = [];
+  const skipped: Array<{ evidence_id: string; reason: string }> = [];
+  const preview: CloudflareEvidenceReviewPreview[] = [];
+  const reviewedEvidenceIds = new Set<string>();
+  const reviewedAt = (options.reviewedAt ?? new Date()).toISOString();
+
+  for (const item of evidence) {
+    const skipReason = cloudflareReviewSkipReason(item);
+    const isCloudflareEvidence = item.metadata.signal_source === "cloudflare";
+    preview.push({
+      evidence_id: item.evidence_id,
+      ...(isCloudflareEvidence ? { title: item.title, summary: item.summary, requirement_ids: item.supports } : {}),
+      decision,
+      eligible: !skipReason,
+      ...(skipReason ? { skip_reason: skipReason } : {})
+    });
+
+    if (skipReason) {
+      skipped.push({ evidence_id: item.evidence_id, reason: skipReason });
+      continue;
+    }
+
+    for (const requirementId of item.supports) {
+      const reviewKey = `${item.evidence_id}\0${requirementId}`;
+      if (acceptedReviewKeys.has(reviewKey)) {
+        skipped.push({
+          evidence_id: item.evidence_id,
+          reason: `existing accepted review decision for ${requirementId}`
+        });
+        continue;
+      }
+
+      reviewedEvidenceIds.add(item.evidence_id);
+      records.push({
+        schemaVersion: 1,
+        reviewed_at: reviewedAt,
+        evidence_id: item.evidence_id,
+        requirement_id: requirementId,
+        decision,
+        ...(options.reviewer ? { reviewer: options.reviewer } : {}),
+        rationale: rationale.trim()
+      });
+    }
+  }
+
+  const outputPath = join(workspaceRoot, "reviews", "evidence-review.jsonl");
+  if (!options.dryRun && records.length > 0) {
+    await mkdir(join(workspaceRoot, "reviews"), { recursive: true });
+    await appendFile(outputPath, records.map((record) => JSON.stringify(record)).join("\n") + "\n");
+  }
+
+  return {
+    ...(options.dryRun || records.length === 0 ? {} : { outputPath }),
+    reviewedEvidence: reviewedEvidenceIds.size,
+    reviewRecords: records.length,
+    skippedEvidence: skipped.length,
+    decision,
+    preview,
+    records,
+    skipped
+  };
 }
 
 export async function exportPublicEvidence(workspaceRoot: string): Promise<PublicEvidenceExportResult> {
@@ -227,6 +342,40 @@ function validateEvidenceItem(
   if (credentialPath) {
     issues.push(`evidence ${item.evidence_id} contains credential-like metadata at ${credentialPath}.`);
   }
+}
+
+function cloudflareReviewSkipReason(item: EvidenceItem): string | undefined {
+  if (item.metadata.signal_source !== "cloudflare") {
+    return "not Cloudflare scanner evidence";
+  }
+  if (item.origin !== "scan") {
+    return "not scan-origin evidence";
+  }
+  if (item.lifecycle_status !== "candidate") {
+    return "not candidate evidence";
+  }
+  if (item.classification !== "confidential" && item.classification !== "internal") {
+    return "classification is not eligible for Cloudflare bulk review";
+  }
+  if (item.supports.length === 0) {
+    return "no requirement mapping";
+  }
+  return undefined;
+}
+
+async function latestAcceptedReviewKeys(workspaceRoot: string): Promise<Set<string>> {
+  const latestByKey = new Map<string, EvidenceReviewRecord>();
+  for (const review of await loadEvidenceReviews(workspaceRoot)) {
+    const key = `${review.evidence_id}\0${review.requirement_id}`;
+    const current = latestByKey.get(key);
+    if (!current || Date.parse(current.reviewed_at) <= Date.parse(review.reviewed_at)) {
+      latestByKey.set(key, review);
+    }
+  }
+
+  return new Set([...latestByKey.entries()]
+    .filter(([, review]) => review.decision === "accepted")
+    .map(([key]) => key));
 }
 
 export async function loadEvidenceIndex(workspaceRoot: string): Promise<EvidenceItem[]> {
