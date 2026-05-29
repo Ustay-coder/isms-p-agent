@@ -10,9 +10,13 @@ const templatePaths = [
 ];
 
 const requiredText = [
+  "# Cloudflare",
+  "## Requirement",
+  "## Purpose",
   "Accepted Criteria",
   "Private Storage",
   "Public Export Rule",
+  "Review Command",
   "evidence/private/ISMS-P-2.10.2",
   "isms-agent evidence review"
 ];

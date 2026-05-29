@@ -29,7 +29,7 @@ Private artifacts may contain account identifiers, zone identifiers, ticket refe
 
 ## Public Export Rule
 
-Public exports may state that private Cloudflare change approval evidence exists, the change category, the requirement it supports, and whether approval or follow-up was completed. Public exports must not include account identifiers, zone identifiers, private resource names, ticket contents, reviewer notes, or private file paths.
+Public exports may state that private Cloudflare change approval evidence exists, the change category, the requirement it supports, and whether approval or follow-up was completed. Public exports must not include account identifiers, zone identifiers, private resource names, ticket contents, raw exports, screenshots, reviewer notes, private rationale, or private file paths.
 
 ## Review Command
 

@@ -29,7 +29,7 @@ Private artifacts may describe account identifiers, zone identifiers, role names
 
 ## Public Export Rule
 
-Public exports may state that a private Cloudflare administrative access review exists, when it was reviewed, the requirement it supports, and whether follow-up is complete. Public exports must not include account identifiers, zone identifiers, user identities, resource names, access lists, reviewer notes, or private file paths.
+Public exports may state that a private Cloudflare administrative access review exists, when it was reviewed, the requirement it supports, and whether follow-up is complete. Public exports must not include account identifiers, zone identifiers, user identities, resource names, access lists, raw exports, screenshots, reviewer notes, private rationale, or private file paths.
 
 ## Review Command
 
