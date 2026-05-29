@@ -462,6 +462,8 @@ test("reviewEvidence appends a human review record for an indexed evidence item"
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-"));
   try {
     await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "evidence", "private", "ISMS-P-2.5.3"), { recursive: true });
+    await writeFile(join(dir, "evidence", "private", "ISMS-P-2.5.3", "mfa-review.md"), "# MFA review\n");
     await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({ evidence_id: "ev_auth_mfa" })) + "\n");
 
     const result = await reviewEvidence(dir, {
@@ -470,6 +472,7 @@ test("reviewEvidence appends a human review record for an indexed evidence item"
       decision: "accepted",
       rationale: "Owner confirmed MFA enforcement.",
       reviewer: "security-owner",
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/mfa-review.md",
       reviewedAt: new Date("2026-05-28T02:00:00.000Z")
     });
 
@@ -482,8 +485,48 @@ test("reviewEvidence appends a human review record for an indexed evidence item"
       requirement_id: "ISMS-P-2.5.3.admin-mfa",
       decision: "accepted",
       reviewer: "security-owner",
+      private_evidence_path: "evidence/private/ISMS-P-2.5.3/mfa-review.md",
       rationale: "Owner confirmed MFA enforcement."
     }]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("reviewEvidence requires existing private evidence for accepted decisions", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-private-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "evidence", "private", "ISMS-P-2.5.3"), { recursive: true });
+    await mkdir(join(dir, "project"), { recursive: true });
+    await writeFile(join(dir, "evidence", "private", "ISMS-P-2.5.3", "mfa-review.md"), "# MFA review\n");
+    await writeFile(join(dir, "project", "mfa-review.md"), "# not private evidence\n");
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({ evidence_id: "ev_auth_mfa" })) + "\n");
+
+    const accepted = {
+      evidenceId: "ev_auth_mfa",
+      requirementId: "ISMS-P-2.5.3.admin-mfa",
+      decision: "accepted" as const,
+      rationale: "Owner confirmed MFA enforcement."
+    };
+
+    await assert.rejects(reviewEvidence(dir, accepted), /requires --private-evidence/);
+    await assert.rejects(
+      reviewEvidence(dir, { ...accepted, privateEvidencePath: "project/mfa-review.md" }),
+      /must be under evidence\/private\//
+    );
+    await assert.rejects(
+      reviewEvidence(dir, { ...accepted, privateEvidencePath: "evidence/private/ISMS-P-2.5.3/missing.md" }),
+      /does not exist/
+    );
+
+    const result = await reviewEvidence(dir, {
+      ...accepted,
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/mfa-review.md",
+      reviewedAt: new Date("2026-05-28T02:00:00.000Z")
+    });
+
+    assert.equal(result.record.private_evidence_path, "evidence/private/ISMS-P-2.5.3/mfa-review.md");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -520,6 +563,91 @@ test("validateEvidence warns when mapped candidate evidence has no review decisi
     assert.equal(result.valid, true);
     assert.match(result.warnings.join("\n"), /ev_candidate/);
     assert.match(result.warnings.join("\n"), /has candidate requirement mapping but no review decision/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("validateEvidence rejects accepted reviews without valid private evidence references", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-accepted-private-validation-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+    await mkdir(join(dir, "project"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({
+      evidence_id: "ev_auth_mfa",
+      supports: ["ISMS-P-2.5.3.admin-mfa"]
+    })) + "\n");
+    await writeFile(join(dir, "project", "review.md"), "# outside private evidence\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), [
+      JSON.stringify({
+        schemaVersion: 1,
+        reviewed_at: "2026-05-28T01:00:00.000Z",
+        evidence_id: "ev_auth_mfa",
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        decision: "accepted",
+        rationale: "Missing private evidence path."
+      }),
+      JSON.stringify({
+        schemaVersion: 1,
+        reviewed_at: "2026-05-28T02:00:00.000Z",
+        evidence_id: "ev_auth_mfa",
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        decision: "accepted",
+        rationale: "Outside private evidence path.",
+        private_evidence_path: "project/review.md"
+      }),
+      JSON.stringify({
+        schemaVersion: 1,
+        reviewed_at: "2026-05-28T03:00:00.000Z",
+        evidence_id: "ev_auth_mfa",
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        decision: "accepted",
+        rationale: "Missing private file.",
+        private_evidence_path: "evidence/private/ISMS-P-2.5.3/missing.md"
+      })
+    ].join("\n") + "\n");
+
+    const result = await validateEvidence(dir, { public: true });
+
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join("\n"), /accepted review ev_auth_mfa for ISMS-P-2\.5\.3\.admin-mfa requires private_evidence_path/);
+    assert.match(result.issues.join("\n"), /must reference evidence\/private\//);
+    assert.match(result.issues.join("\n"), /private_evidence_path does not exist/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("validateEvidence accepts accepted reviews with private evidence reference and public-safe locator", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-accepted-private-valid-"));
+  try {
+    await mkdir(join(dir, "evidence", "private", "ISMS-P-2.10.2"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+    await writeFile(join(dir, "evidence", "private", "ISMS-P-2.10.2", "security-review.md"), "# Private review\n");
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({
+      evidence_id: "ev_cloudflare_security_review",
+      supports: ["ISMS-P-2.10.2.cloudflare-config-export"],
+      locator: {
+        kind: "external_reference",
+        value: "private-cloudflare-security-review"
+      }
+    })) + "\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify({
+      schemaVersion: 1,
+      reviewed_at: "2026-05-29T00:00:00.000Z",
+      evidence_id: "ev_cloudflare_security_review",
+      requirement_id: "ISMS-P-2.10.2.cloudflare-config-export",
+      decision: "accepted",
+      rationale: "Private review confirmed.",
+      private_evidence_path: "evidence/private/ISMS-P-2.10.2/security-review.md"
+    }) + "\n");
+
+    const result = await validateEvidence(dir, { public: true });
+
+    assert.equal(result.valid, true);
+    assert.deepEqual(result.issues, []);
+    assert.deepEqual(result.warnings, []);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -663,6 +791,8 @@ test("CLI supports evidence index, review, and export-public", async () => {
     assert.equal(indexResult.status, 0, indexResult.stderr);
     const indexed = JSON.parse(indexResult.stdout);
     assert.equal(indexed.indexedEvidence, 2);
+    await mkdir(join(dir, "evidence", "private", "ISMS-P-2.10.2"), { recursive: true });
+    await writeFile(join(dir, "evidence", "private", "ISMS-P-2.10.2", "waf-review.md"), "# WAF review\n");
 
     const reviewResult = spawnSync(process.execPath, [
       join(process.cwd(), "dist", "cli.js"),
@@ -684,6 +814,30 @@ test("CLI supports evidence index, review, and export-public", async () => {
     assert.equal(reviewResult.status, 0, reviewResult.stderr);
     const reviewed = JSON.parse(reviewResult.stdout);
     assert.equal(reviewed.record.decision, "needs_followup");
+    assert.equal(reviewed.record.private_evidence_path, undefined);
+
+    const acceptedReview = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "evidence",
+      "review",
+      "ev_scan_cloudflare_cloudflare_waf",
+      "--requirement",
+      "ISMS-P-2.10.2.cloudflare-config-export",
+      "--decision",
+      "accepted",
+      "--rationale",
+      "Private WAF review confirmed.",
+      "--reviewer",
+      "security-owner",
+      "--private-evidence",
+      "evidence/private/ISMS-P-2.10.2/waf-review.md"
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+    assert.equal(acceptedReview.status, 0, acceptedReview.stderr);
+    const accepted = JSON.parse(acceptedReview.stdout);
+    assert.equal(accepted.record.private_evidence_path, "evidence/private/ISMS-P-2.10.2/waf-review.md");
 
     const exportResult = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), "evidence", "export-public"], {
       cwd: dir,

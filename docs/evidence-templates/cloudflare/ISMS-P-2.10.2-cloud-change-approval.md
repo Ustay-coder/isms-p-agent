@@ -39,6 +39,7 @@ After the private review is complete, record the decision with:
 isms-agent evidence review <evidence-id> \
   --requirement ISMS-P-2.10.2.cloud-change-approval \
   --decision accepted \
+  --private-evidence evidence/private/ISMS-P-2.10.2/change-approval/<record-file> \
   --reviewer <reviewer-name> \
   --rationale "Private Cloudflare change approval evidence reviewed by the control owner."
 ```

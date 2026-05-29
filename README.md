@@ -135,6 +135,19 @@ isms-agent evidence validate --public
 
 Accepted Cloudflare evidence is a manual operating-evidence decision. Before recording `--decision accepted`, use the private templates in [docs/evidence-templates/cloudflare/](docs/evidence-templates/cloudflare/) to confirm accepted criteria, private storage, and public export rules. Scanner output alone is not enough to accept ISMS-P-2.10.2 operating evidence.
 
+Accepted decisions must reference an existing local private evidence file or directory under `evidence/private/`:
+
+```bash
+isms-agent evidence review ev_cloudflare_security_review_2026_q2 \
+  --requirement ISMS-P-2.10.2.cloudflare-config-export \
+  --decision accepted \
+  --private-evidence evidence/private/ISMS-P-2.10.2/security-review/2026-Q2.md \
+  --rationale "Private Cloudflare security review confirmed by the security owner." \
+  --reviewer security-owner
+```
+
+Keep the private file path out of `evidence/index.jsonl` locators. Use a public-safe locator such as an internal reference ID, and let the accepted review record carry the private path through `--private-evidence`.
+
 See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and evaluation service dry-run flow.
 
 ## Natural-Language Questions with Agents
@@ -175,7 +188,7 @@ The validator fails when private evidence, scans, reports, or review overlays ar
 
 ## Control Knowledge Pack v0
 
-The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes three controls:
+The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes eight controls.
 
 The direct pack sources are OpenKB `compiled/controls`, `compiled/citations`, `compiled/evidence`, and public `wiki` notes. Raw legal profile rows such as `raw/legal/7의2...` are kept only as source-profile cross-check references because their numbering can differ from the compiled OpenKB control IDs.
 

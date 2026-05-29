@@ -49,6 +49,7 @@ export interface EvidenceReviewOptions {
   rationale: string;
   reviewer?: string;
   expiresAt?: string;
+  privateEvidencePath?: string;
   reviewedAt?: Date;
 }
 
@@ -135,6 +136,9 @@ export async function reviewEvidence(
   if (!options.rationale.trim()) {
     throw new Error("Evidence review requires --rationale.");
   }
+  const privateEvidencePath = options.decision === "accepted"
+    ? await resolvePrivateEvidenceReference(workspaceRoot, options.privateEvidencePath)
+    : undefined;
 
   const record: EvidenceReviewRecord = {
     schemaVersion: 1,
@@ -144,6 +148,7 @@ export async function reviewEvidence(
     decision: options.decision,
     ...(options.reviewer ? { reviewer: options.reviewer } : {}),
     rationale: options.rationale,
+    ...(privateEvidencePath ? { private_evidence_path: privateEvidencePath } : {}),
     ...(options.expiresAt ? { expires_at: options.expiresAt } : {})
   };
 
@@ -289,6 +294,7 @@ export async function validateEvidence(
 
   const evidence = await loadEvidenceIndex(workspaceRoot);
   const reviews = await loadEvidenceReviews(workspaceRoot);
+  await validateAcceptedReviewPrivateEvidence(workspaceRoot, reviews, issues);
   const reviewKeys = new Set(reviews.map((review) => `${review.evidence_id}\0${review.requirement_id}`));
   const reviewRequirementsByEvidence = new Map<string, Set<string>>();
   for (const review of reviews) {
@@ -308,6 +314,41 @@ export async function validateEvidence(
     issues,
     warnings
   };
+}
+
+async function validateAcceptedReviewPrivateEvidence(
+  workspaceRoot: string,
+  reviews: EvidenceReviewRecord[],
+  issues: string[]
+): Promise<void> {
+  for (const review of reviews.filter((item) => item.decision === "accepted")) {
+    const label = `accepted review ${review.evidence_id} for ${review.requirement_id}`;
+    if (!review.private_evidence_path) {
+      issues.push(`${label} requires private_evidence_path.`);
+      continue;
+    }
+
+    const normalized = review.private_evidence_path.replaceAll("\\", "/");
+    if (isAbsolute(normalized)) {
+      issues.push(`${label} private_evidence_path must be workspace-relative: ${redactPath(normalized, workspaceRoot)}`);
+      continue;
+    }
+    if (!isPrivateEvidenceRelativePath(normalized)) {
+      issues.push(`${label} must reference evidence/private/: ${normalized}`);
+      continue;
+    }
+
+    try {
+      const resolved = resolveWorkspacePath(workspaceRoot, normalized, "Accepted review private evidence path");
+      await stat(resolved);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        issues.push(`${label} private_evidence_path does not exist: ${normalized}`);
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 function validateEvidenceItem(
@@ -550,6 +591,33 @@ function resolveWorkspacePath(workspaceRoot: string, inputPath: string, label: s
     throw new Error(`${label} must be inside the workspace: ${inputPath}`);
   }
   return resolved;
+}
+
+async function resolvePrivateEvidenceReference(workspaceRoot: string, inputPath: string | undefined): Promise<string> {
+  if (!inputPath?.trim()) {
+    throw new Error("Accepted evidence review requires --private-evidence under evidence/private/.");
+  }
+
+  const resolved = resolveWorkspacePath(workspaceRoot, inputPath, "Private evidence path");
+  const relativePath = relative(resolve(workspaceRoot), resolved).replaceAll("\\", "/");
+  if (!isPrivateEvidenceRelativePath(relativePath)) {
+    throw new Error(`Accepted evidence private path must be under evidence/private/: ${inputPath}`);
+  }
+
+  try {
+    await stat(resolved);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`Accepted evidence private path does not exist: ${inputPath}`);
+    }
+    throw error;
+  }
+
+  return relativePath;
+}
+
+function isPrivateEvidenceRelativePath(path: string): boolean {
+  return path === "evidence/private" || path.startsWith("evidence/private/");
 }
 
 function evidenceFromSignal(signal: ScanSignal, collectedAt: string): EvidenceItem {

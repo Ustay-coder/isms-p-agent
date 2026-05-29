@@ -28,6 +28,10 @@ Scanner output is not evidence acceptance. `isms-agent evidence index` turns sca
 
 Accepted Cloudflare operating evidence must come from manual private-record review, not from scanner output alone. The templates under `docs/evidence-templates/cloudflare/` define the accepted criteria, private storage location, and public export rule for Cloudflare access review, change approval, and security review evidence before a human owner records an accepted decision.
 
+Accepted review decisions require `--private-evidence <path>`, and that path must exist under `evidence/private/`. Review records store only the workspace-relative private path, and public reports omit private evidence paths and review rationale.
+
+Evidence index locators should remain public-safe references. Do not put `evidence/private/...` paths in `evidence/index.jsonl`; use `--private-evidence` on the accepted review record instead.
+
 The default workspace keeps real evidence local:
 
 - `evidence/private/` for real evidence files,

@@ -136,7 +136,7 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id] [--cloudflare-account account-id] [--cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway]");
   console.error("Usage: isms-agent report [--public]");
   console.error("Usage: isms-agent evidence index [--from-scan scans/file.json]");
-  console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>]");
+  console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>] [--private-evidence evidence/private/...]");
   console.error("Usage: isms-agent evidence review-cloudflare [--decision needs_followup|rejected] [--rationale <text>] [--reviewer <name>] [--dry-run]");
   console.error("Usage: isms-agent evidence export-public");
   console.error("Usage: isms-agent evidence validate [--public]");
@@ -180,6 +180,7 @@ function parseEvidenceReviewArgs(args: string[]): {
   rationale: string;
   reviewer?: string;
   expiresAt?: string;
+  privateEvidencePath?: string;
 } | undefined {
   const evidenceId = args[0];
   if (!evidenceId || evidenceId.startsWith("--")) {
@@ -191,6 +192,7 @@ function parseEvidenceReviewArgs(args: string[]): {
   let rationale: string | undefined;
   let reviewer: string | undefined;
   let expiresAt: string | undefined;
+  let privateEvidencePath: string | undefined;
 
   for (let index = 1; index < args.length; index += 1) {
     const arg = args[index];
@@ -211,6 +213,8 @@ function parseEvidenceReviewArgs(args: string[]): {
       reviewer = value;
     } else if (arg === "--expires-at") {
       expiresAt = value;
+    } else if (arg === "--private-evidence") {
+      privateEvidencePath = value;
     } else {
       return undefined;
     }
@@ -221,7 +225,15 @@ function parseEvidenceReviewArgs(args: string[]): {
     return undefined;
   }
 
-  return { evidenceId, requirementId, decision, rationale, ...(reviewer ? { reviewer } : {}), ...(expiresAt ? { expiresAt } : {}) };
+  return {
+    evidenceId,
+    requirementId,
+    decision,
+    rationale,
+    ...(reviewer ? { reviewer } : {}),
+    ...(expiresAt ? { expiresAt } : {}),
+    ...(privateEvidencePath ? { privateEvidencePath } : {})
+  };
 }
 
 function parseCloudflareEvidenceReviewArgs(args: string[]): {
