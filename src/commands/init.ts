@@ -1,3 +1,4 @@
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ensureWorkspaceDirectories, writeTextIfMissing } from "../core/workspace.js";
 
@@ -22,6 +23,15 @@ const CONFIG_TEMPLATE = {
   reportFormats: ["markdown"]
 };
 
+const GITIGNORE_RULES = [
+  "/evidence/private/",
+  "/reviews/",
+  "/scans/",
+  "/reports/",
+  "*.secret.*",
+  "*.private.*"
+];
+
 export async function initWorkspace(root: string): Promise<void> {
   await ensureWorkspaceDirectories(root);
   await writeTextIfMissing(join(root, "AGENTS.md"), AGENTS_TEMPLATE);
@@ -30,4 +40,25 @@ export async function initWorkspace(root: string): Promise<void> {
     join(root, "isms-agent.config.json"),
     `${JSON.stringify(CONFIG_TEMPLATE, null, 2)}\n`
   );
+  await ensureGitignoreRules(join(root, ".gitignore"), GITIGNORE_RULES);
+}
+
+async function ensureGitignoreRules(path: string, rules: string[]): Promise<void> {
+  let existing = "";
+  try {
+    existing = await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  const existingLines = new Set(existing.split(/\r?\n/).map((line) => line.trim()));
+  const missing = rules.filter((rule) => !existingLines.has(rule));
+  if (missing.length === 0) {
+    return;
+  }
+
+  const prefix = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
+  await writeFile(path, `${existing}${prefix}${missing.join("\n")}\n`);
 }

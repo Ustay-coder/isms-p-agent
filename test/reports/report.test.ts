@@ -172,6 +172,58 @@ test("connector failure uncertainty remains reportable", async () => {
   }
 });
 
+test("reports include evidence review overlay decisions when present", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-evidence-review-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "2.5.3.json"), stringifyJson(control({
+      control_id: "ISMS-P-2.5.3",
+      required_evidence: ["MFA and session configuration record"]
+    })));
+    await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult()));
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify({
+      evidence_id: "ev_auth_mfa",
+      title: "MFA configuration candidate",
+      evidence_type: "configuration_export",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "manual",
+      supports: ["ISMS-P-2.5.3.admin-mfa"],
+      locator: { kind: "workspace_path", value: "project/evaluation/specs/Auth_Spec.md" },
+      summary: "MFA configuration and session setting evidence candidate.",
+      collected_at: "2026-05-28T00:00:00.000Z",
+      review_required: true,
+      metadata: {}
+    }) + "\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify({
+      schemaVersion: 1,
+      reviewed_at: "2026-05-28T01:00:00.000Z",
+      evidence_id: "ev_auth_mfa",
+      requirement_id: "ISMS-P-2.5.3.admin-mfa",
+      decision: "needs_followup",
+      reviewer: "security-owner",
+      rationale: "Production enforcement record is still required."
+    }) + "\n");
+
+    const result = await generateReports(dir);
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+    const evidenceMap = await readFile(result.outputPaths.evidenceMap, "utf8");
+
+    assert.match(controlGap, /\*\*Evidence review overlay:\*\*/);
+    assert.match(controlGap, /ISMS-P-2\.5\.3\.admin-mfa/);
+    assert.match(controlGap, /needs_followup/);
+    assert.match(controlGap, /Production enforcement record is still required/);
+    assert.match(evidenceMap, /Review overlay decision/);
+    assert.match(evidenceMap, /ev_auth_mfa/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("reports explain deleted residual-risk controls without normal gap wording", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-deleted-control-"));
   try {

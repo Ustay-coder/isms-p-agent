@@ -1,6 +1,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { ControlKnowledge } from "../schemas/control.js";
+import type { EvidenceItem, EvidenceReviewRecord, EvidenceReviewSummary } from "../schemas/evidence.js";
 import type { ScanResult } from "../schemas/scan.js";
 
 export async function loadControls(workspaceRoot: string): Promise<ControlKnowledge[]> {
@@ -50,6 +51,70 @@ export async function loadLatestScan(workspaceRoot: string): Promise<ScanResult>
   }
 
   return latest.scan;
+}
+
+export async function loadEvidenceReviewSummaries(workspaceRoot: string): Promise<EvidenceReviewSummary[]> {
+  const evidence = await loadEvidenceIndex(workspaceRoot);
+  const evidenceById = new Map(evidence.map((item) => [item.evidence_id, item]));
+  const reviews = await loadEvidenceReviews(workspaceRoot);
+  const latestByKey = new Map<string, EvidenceReviewRecord>();
+
+  for (const review of reviews) {
+    const key = `${review.evidence_id}\0${review.requirement_id}`;
+    const current = latestByKey.get(key);
+    if (!current || Date.parse(current.reviewed_at) <= Date.parse(review.reviewed_at)) {
+      latestByKey.set(key, review);
+    }
+  }
+
+  return [...latestByKey.values()]
+    .sort((left, right) => {
+      const requirementComparison = left.requirement_id.localeCompare(right.requirement_id, "en");
+      return requirementComparison === 0 ? left.evidence_id.localeCompare(right.evidence_id, "en") : requirementComparison;
+    })
+    .map((review) => {
+      const item = evidenceById.get(review.evidence_id);
+      return {
+        evidence_id: review.evidence_id,
+        requirement_id: review.requirement_id,
+        decision: review.decision,
+        rationale: review.rationale,
+        reviewer: review.reviewer,
+        expires_at: review.expires_at,
+        classification: item?.classification,
+        title: item?.title
+      };
+    });
+}
+
+async function loadEvidenceIndex(workspaceRoot: string): Promise<EvidenceItem[]> {
+  try {
+    return parseJsonl<EvidenceItem>(await readFile(join(workspaceRoot, "evidence", "index.jsonl"), "utf8"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function loadEvidenceReviews(workspaceRoot: string): Promise<EvidenceReviewRecord[]> {
+  try {
+    return parseJsonl<EvidenceReviewRecord>(await readFile(join(workspaceRoot, "reviews", "evidence-review.jsonl"), "utf8"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+function parseJsonl<T>(content: string): T[] {
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line) as T);
 }
 
 async function jsonFileNames(directory: string): Promise<string[]> {
