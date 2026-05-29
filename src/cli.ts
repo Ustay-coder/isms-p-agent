@@ -7,6 +7,7 @@ import { ingestSource } from "./commands/ingest.js";
 import { generatePack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
 import { generateReports } from "./commands/report.js";
 import { scanLocal, scanWorkspace, type ScanOptions } from "./commands/scan.js";
+import { parseCloudflareProducts } from "./connectors/cloudflare-products.js";
 
 async function main(argv: string[]): Promise<void> {
   const command = argv[2];
@@ -108,7 +109,7 @@ async function main(argv: string[]): Promise<void> {
 
   console.error("Usage: isms-agent init");
   console.error("Usage: isms-agent ingest <raw-file>");
-  console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
+  console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id] [--cloudflare-account account-id] [--cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway]");
   console.error("Usage: isms-agent report [--public]");
   console.error("Usage: isms-agent evidence index [--from-scan scans/file.json]");
   console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>]");
@@ -234,10 +235,38 @@ function parseScanOptions(args: string[]): ScanOptions | undefined {
       continue;
     }
 
+    if (arg === "--cloudflare-account") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) {
+        return undefined;
+      }
+      options.cloudflareAccount = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--cloudflare-products") {
+      const value = args[index + 1];
+      if (!value || value.startsWith("--")) {
+        return undefined;
+      }
+      const products = parseCloudflareProducts(value);
+      if (!products) {
+        return undefined;
+      }
+      options.cloudflareProducts = products;
+      index += 1;
+      continue;
+    }
+
     return undefined;
   }
 
   if ((options.target || options.include || options.exclude) && !options.local) {
+    return undefined;
+  }
+
+  if ((options.cloudflareAccount || options.cloudflareProducts) && !options.cloudflare) {
     return undefined;
   }
 

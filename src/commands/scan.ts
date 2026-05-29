@@ -1,6 +1,7 @@
 import { stat } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { scanCloudflare } from "../connectors/cloudflare.js";
+import type { CloudflareProduct } from "../connectors/cloudflare-products.js";
 import { scanGitHub } from "../connectors/github.js";
 import { scanVercel } from "../connectors/vercel.js";
 import { writeJson } from "../core/json.js";
@@ -20,6 +21,8 @@ export interface ScanOptions {
   github?: string;
   vercel?: string;
   cloudflare?: string;
+  cloudflareAccount?: string;
+  cloudflareProducts?: CloudflareProduct[];
 }
 
 export interface LocalScanOptions {
@@ -63,7 +66,12 @@ export async function scanWorkspace(workspaceRoot: string, options: ScanOptions,
   }
 
   if (options.cloudflare) {
-    signals.push(...await scanCloudflare({ zone: options.cloudflare, token: process.env.CLOUDFLARE_API_TOKEN }));
+    signals.push(...await scanCloudflare({
+      zone: options.cloudflare,
+      accountId: options.cloudflareAccount,
+      products: options.cloudflareProducts,
+      token: process.env.CLOUDFLARE_API_TOKEN
+    }));
   }
 
   const result: ScanResult = {

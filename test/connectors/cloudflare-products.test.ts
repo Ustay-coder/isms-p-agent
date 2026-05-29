@@ -26,3 +26,8 @@ test("normalizeCloudflareProducts keeps legacy zone scan behavior by default", (
 test("normalizeCloudflareProducts removes duplicates while preserving order", () => {
   assert.deepEqual(normalizeCloudflareProducts(["workers", "r2", "workers", "zone"]), ["workers", "r2", "zone"]);
 });
+
+test("parseCloudflareProducts returns undefined for uppercase or whitespace-only values", () => {
+  assert.equal(parseCloudflareProducts("Workers"), undefined);
+  assert.equal(parseCloudflareProducts("   "), undefined);
+});
