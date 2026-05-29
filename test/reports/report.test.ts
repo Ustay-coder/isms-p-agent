@@ -286,20 +286,42 @@ test("generateReports public mode writes redacted reports without private paths 
         }
       ]
     })));
-    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify({
-      evidence_id: "ev_auth_mfa",
-      title: "Private production MFA configuration candidate",
-      evidence_type: "configuration_export",
-      classification: "confidential",
-      lifecycle_status: "candidate",
-      origin: "manual",
-      supports: ["ISMS-P-2.5.3.admin-mfa"],
-      locator: { kind: "workspace_path", value: "evidence/private/mfa.md" },
-      summary: "MFA private configuration evidence candidate.",
-      collected_at: "2026-05-28T00:00:00.000Z",
-      review_required: true,
-      metadata: {}
-    }) + "\n");
+    await writeFile(join(dir, "evidence", "index.jsonl"), [
+      JSON.stringify({
+        evidence_id: "ev_auth_mfa",
+        title: "Private production MFA configuration candidate",
+        evidence_type: "configuration_export",
+        classification: "confidential",
+        lifecycle_status: "candidate",
+        origin: "manual",
+        supports: ["ISMS-P-2.5.3.admin-mfa"],
+        locator: { kind: "workspace_path", value: "evidence/private/mfa.md" },
+        summary: "MFA private configuration evidence candidate.",
+        collected_at: "2026-05-28T00:00:00.000Z",
+        review_required: true,
+        metadata: {}
+      }),
+      JSON.stringify({
+        evidence_id: "ev_cloudflare_hyperdrive",
+        title: "Cloudflare account_123 private-db Hyperdrive candidate",
+        evidence_type: "configuration_export",
+        classification: "confidential",
+        lifecycle_status: "candidate",
+        origin: "scan",
+        supports: ["ISMS-P-2.5.3.admin-mfa"],
+        locator: { kind: "scan_signal", value: "cloudflare:hyperdrive" },
+        summary: "Cloudflare bucket and private-db details are private.",
+        collected_at: "2026-05-28T00:00:00.000Z",
+        review_required: true,
+        metadata: {
+          product: "hyperdrive",
+          count: 1,
+          unsafe_account: "account_123",
+          unsafe_database_host: "private-db.example.internal",
+          unsafe_bucket: "private-customer-uploads"
+        }
+      })
+    ].join("\n") + "\n");
     await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify({
       schemaVersion: 1,
       reviewed_at: "2026-05-28T01:00:00.000Z",
@@ -321,9 +343,16 @@ test("generateReports public mode writes redacted reports without private paths 
     assert.doesNotMatch(controlGap, /Private MFA runbook/);
     assert.doesNotMatch(controlGap, /Private production MFA/);
     assert.doesNotMatch(controlGap, /private source excerpt/);
+    assert.doesNotMatch(controlGap, /account_123/);
+    assert.doesNotMatch(controlGap, /private-db/);
+    assert.doesNotMatch(controlGap, /private-customer-uploads/);
     assert.doesNotMatch(evidenceMap, /evidence\/private/);
     assert.doesNotMatch(evidenceMap, /Private MFA runbook/);
     assert.doesNotMatch(evidenceMap, /Private production MFA/);
+    assert.doesNotMatch(evidenceMap, /account_123/);
+    assert.doesNotMatch(evidenceMap, /private-db/);
+    assert.doesNotMatch(evidenceMap, /private-customer-uploads/);
+    assert.match(evidenceMap, /ev_cloudflare_hyperdrive/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
