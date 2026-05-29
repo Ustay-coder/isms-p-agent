@@ -319,6 +319,9 @@ function credentialLikeMetadataPath(metadata: Record<string, string | number | b
     if (/(secret|token|password|private.?key|credential|database.?url|api.?key)/i.test(loweredKey)) {
       return key;
     }
+    if (isKnownSafeMetadataValue(key, value)) {
+      continue;
+    }
 
     const values = Array.isArray(value) ? value : [value];
     for (const entry of values) {
@@ -328,6 +331,20 @@ function credentialLikeMetadataPath(metadata: Record<string, string | number | b
     }
   }
   return undefined;
+}
+
+function isKnownSafeMetadataValue(key: string, value: string | number | boolean | string[]): boolean {
+  if (key !== "permission_status" || typeof value !== "string") {
+    return false;
+  }
+  return [
+    "available",
+    "missing_token",
+    "missing_account_id",
+    "needs_permission_or_confirmation",
+    "zone_unavailable",
+    "not_observed"
+  ].includes(value);
 }
 
 function looksLikeSecret(value: string): boolean {

@@ -63,6 +63,29 @@ test("validateEvidence rejects public evidence metadata that looks like a creden
   }
 });
 
+test("validateEvidence allows public-safe Cloudflare permission status metadata", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cloudflare-permission-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({
+      evidence_id: "ev_cloudflare_dns_permission",
+      classification: "confidential",
+      metadata: {
+        product: "dns",
+        permission_status: "needs_permission_or_confirmation",
+        endpoint: "/zones/{zone_id}/dns_records"
+      }
+    })) + "\n");
+
+    const result = await validateEvidence(dir, { public: true });
+
+    assert.equal(result.valid, true);
+    assert.doesNotMatch(result.issues.join("\n"), /credential-like metadata/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("validateEvidence warns when accepted evidence is expired", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-"));
   try {

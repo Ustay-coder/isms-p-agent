@@ -10,6 +10,8 @@ Connector failures must be reported as uncertainty. A failed API call, missing t
 
 Cloudflare account scans may record product availability, counts, endpoint categories, permission status, and requirement IDs. They must not store account IDs, token values, Worker script names or code, Worker secret values, R2 bucket names or object keys, Hyperdrive database hosts, database names, database users, passwords, DNS content values, route hostnames, API operation paths, logs, request payloads, or user/admin identities.
 
+The Cloudflare connector permission matrix and product-specific omit rules are maintained in [`docs/connectors/cloudflare.md`](connectors/cloudflare.md). That document is part of the public-safety contract: adding a new Cloudflare product scanner requires documenting the endpoint, read permission, retained metadata, omitted fields, and expected `needs_confirmation` behavior before publishing scan output.
+
 ## No Secret Storage
 
 The tool must not store API tokens, secret values, private keys, session secrets, database URLs, bearer tokens, or environment variable values in scan outputs, reports, logs, or generated wiki files.
