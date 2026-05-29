@@ -44,6 +44,14 @@ test("scanCloudflare emits zone metadata without returning token or DNS content 
   assert.equal(signals.find((signal) => signal.id === "cloudflare:access-apps")?.metadata.appCount, 2);
   assert.deepEqual(signals.find((signal) => signal.id === "cloudflare:dns-records")?.metadata.recordTypes, ["A", "CNAME"]);
   assert.deepEqual(signals.find((signal) => signal.id === "cloudflare:dns-records")?.metadata.recordTypeCounts, ["A:2", "CNAME:1"]);
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:zone")?.metadata.product, "zone");
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:tls-mode")?.metadata.product, "zone");
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:waf")?.metadata.product, "waf");
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:access-apps")?.metadata.product, "access");
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:dns-records")?.metadata.product, "dns");
+  assert.deepEqual(signals.find((signal) => signal.id === "cloudflare:waf")?.metadata.requirement_ids, [
+    "ISMS-P-2.10.2.cloudflare-config-export"
+  ]);
 
   assert.doesNotMatch(serialized, new RegExp(TOKEN));
   assert.doesNotMatch(serialized, /203\.0\.113\.10/);
