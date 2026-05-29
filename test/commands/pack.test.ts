@@ -196,8 +196,7 @@ test("CLI installs the default pack from the repository workspace", () => {
   const result = spawnSync(process.execPath, [
     join(process.cwd(), "dist", "cli.js"),
     "pack",
-    "install",
-    "--overwrite"
+    "install"
   ], {
     cwd: process.cwd(),
     encoding: "utf8"
