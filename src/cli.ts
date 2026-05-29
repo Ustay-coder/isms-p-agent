@@ -4,7 +4,7 @@ import { parseAskContextArgs, runAskContext } from "./commands/ask-context.js";
 import { CLOUDFLARE_BULK_ACCEPTED_ERROR, exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence } from "./commands/evidence.js";
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
-import { generatePack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
+import { generatePack, installPack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
 import { generateReports } from "./commands/report.js";
 import { scanLocal, scanWorkspace, type ScanOptions } from "./commands/scan.js";
 import { parseCloudflareProducts } from "./connectors/cloudflare-products.js";
@@ -95,6 +95,15 @@ async function main(argv: string[]): Promise<void> {
     }
   }
 
+  if (command === "pack" && args[0] === "install") {
+    const parsed = parsePackInstallArgs(args.slice(1));
+    if (parsed) {
+      const result = await installPack(process.cwd(), parsed);
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+  }
+
   if (command === "pack" && args[0] === "generate") {
     const parsed = parsePackGenerateArgs(args.slice(1));
     if (parsed) {
@@ -131,10 +140,27 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: isms-agent evidence review-cloudflare [--decision needs_followup|rejected] [--rationale <text>] [--reviewer <name>] [--dry-run]");
   console.error("Usage: isms-agent evidence export-public");
   console.error("Usage: isms-agent evidence validate [--public]");
+  console.error("Usage: isms-agent pack install [pack-dir] [--overwrite]");
   console.error("Usage: isms-agent pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
   console.error("Usage: isms-agent pack validate [pack-dir]");
   console.error("Usage: isms-agent ask-context <question> [--json] [--markdown]");
   process.exitCode = 1;
+}
+
+function parsePackInstallArgs(args: string[]): { packRoot: string; overwrite?: boolean } | undefined {
+  if (args.length === 0) {
+    return { packRoot: "packs/isms-p-core-v0" };
+  }
+  if (args.length === 1 && args[0] === "--overwrite") {
+    return { packRoot: "packs/isms-p-core-v0", overwrite: true };
+  }
+  if (args.length === 1 && args[0] && !args[0].startsWith("--")) {
+    return { packRoot: args[0] };
+  }
+  if (args.length === 2 && args[0] && !args[0].startsWith("--") && args[1] === "--overwrite") {
+    return { packRoot: args[0], overwrite: true };
+  }
+  return undefined;
 }
 
 function parseEvidenceIndexArgs(args: string[]): { fromScan?: string } | undefined {

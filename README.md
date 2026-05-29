@@ -204,16 +204,14 @@ isms-agent pack validate packs/isms-p-core-v0
 
 The validator rejects public-pack safety problems such as private overlay paths, raw legal profile rows used as direct `source_refs`, mismatched `pack.json` control lists, missing compiled OpenKB references, and deleted controls that are not modeled as human-reviewed residual risk.
 
-Until `isms-agent pack install` exists, copy the controls into a workspace manually:
+Install a curated pack into a workspace before generating reports:
 
 ```bash
-mkdir -p /path/to/workspace/controls
-cp -n packs/isms-p-core-v0/controls/*.json /path/to/workspace/controls/
-cd /path/to/workspace
-isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs
-isms-agent report
-isms-agent ask-context "ISMS-P-2.10.2 클라우드 보안에서 부족한 증적은?"
+isms-agent pack install packs/isms-p-core-v0 --overwrite
+isms-agent report --public
 ```
+
+`pack install` validates the pack first, then copies public control JSON files into `controls/`. Existing workspace controls are preserved unless `--overwrite` is passed.
 
 If files already exist, review them before replacing local workspace controls.
 
