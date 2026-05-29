@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { exportPublicEvidence, indexEvidenceFromScan, reviewEvidence, validateEvidence } from "../../src/commands/evidence.js";
+import { exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence } from "../../src/commands/evidence.js";
 import { stringifyJson } from "../../src/core/json.js";
 import type { EvidenceItem } from "../../src/schemas/evidence.js";
 import type { ScanResult } from "../../src/schemas/scan.js";
@@ -239,6 +239,158 @@ test("indexEvidenceFromScan keeps only safe Cloudflare connector metadata", asyn
   }
 });
 
+test("reviewCloudflareEvidence dry run proposes records without writing review files", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-dry-run-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    const result = await reviewCloudflareEvidence(dir, {
+      dryRun: true,
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T01:00:00.000Z")
+    });
+
+    assert.equal(result.outputPath, undefined);
+    assert.equal(result.reviewedEvidence, 2);
+    assert.equal(result.reviewRecords, 3);
+    assert.equal(result.skippedEvidence, 3);
+    assert.equal(result.decision, "needs_followup");
+    assert.deepEqual(result.records.map((record) => `${record.evidence_id}:${record.requirement_id}`), [
+      "ev_scan_cloudflare_cloudflare_waf:ISMS-P-2.10.2.cloudflare-config-export",
+      "ev_scan_cloudflare_cloudflare_workers:ISMS-P-2.10.2.cloudflare-config-export",
+      "ev_scan_cloudflare_cloudflare_workers:ISMS-P-2.10.2.cloud-change-approval"
+    ]);
+    assert.match(result.records[0]?.rationale ?? "", /operating evidence is still required/);
+    assert.deepEqual(result.skipped.map((item) => item.evidence_id).sort(), [
+      "ev_manual_policy",
+      "ev_scan_cloudflare_unmapped",
+      "ev_scan_github_branch_protection"
+    ]);
+    const wafPreview = result.preview.find((item) => item.evidence_id === "ev_scan_cloudflare_cloudflare_waf");
+    assert.equal(wafPreview?.title, "Cloudflare candidate: WAF rulesets observed.");
+    assert.deepEqual(wafPreview?.requirement_ids, ["ISMS-P-2.10.2.cloudflare-config-export"]);
+    assert.equal(wafPreview?.decision, "needs_followup");
+    assert.equal(wafPreview?.eligible, true);
+
+    const manualPreview = result.preview.find((item) => item.evidence_id === "ev_manual_policy");
+    assert.equal(manualPreview?.eligible, false);
+    assert.equal(manualPreview?.skip_reason, "not Cloudflare scanner evidence");
+    assert.equal("title" in (manualPreview ?? {}), false);
+    assert.equal("summary" in (manualPreview ?? {}), false);
+
+    const unmappedPreview = result.preview.find((item) => item.evidence_id === "ev_scan_cloudflare_unmapped");
+    assert.equal(unmappedPreview?.title, "Authentication policy candidate");
+    assert.deepEqual(unmappedPreview?.requirement_ids, []);
+    assert.equal(unmappedPreview?.eligible, false);
+    assert.equal(unmappedPreview?.skip_reason, "no requirement mapping");
+
+    await assert.rejects(readFile(join(dir, "reviews", "evidence-review.jsonl"), "utf8"), /ENOENT/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("reviewCloudflareEvidence appends needs_followup records that satisfy public validation review warnings", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-append-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 2).map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    const before = await validateEvidence(dir, { public: true });
+    assert.match(before.warnings.join("\n"), /has candidate requirement mapping but no review decision/);
+
+    const result = await reviewCloudflareEvidence(dir, {
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T01:00:00.000Z")
+    });
+
+    assert.equal(result.outputPath, join(dir, "reviews", "evidence-review.jsonl"));
+    assert.equal(result.reviewedEvidence, 2);
+    assert.equal(result.reviewRecords, 3);
+
+    const rows = (await readFile(result.outputPath ?? "", "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(rows.map((row) => row.decision), ["needs_followup", "needs_followup", "needs_followup"]);
+    assert.deepEqual(rows.map((row) => row.reviewed_at), [
+      "2026-05-29T01:00:00.000Z",
+      "2026-05-29T01:00:00.000Z",
+      "2026-05-29T01:00:00.000Z"
+    ]);
+
+    const after = await validateEvidence(dir, { public: true });
+    assert.equal(after.valid, true);
+    assert.doesNotMatch(after.warnings.join("\n"), /has candidate requirement mapping but no review decision/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("reviewCloudflareEvidence rejects accepted decisions and requires rationale for rejected decisions", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-guardrail-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 1).map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    await assert.rejects(reviewCloudflareEvidence(dir, {
+      decision: "accepted",
+      rationale: "Owner accepted it."
+    }), /Cloudflare bulk review cannot auto-accept scanner evidence/);
+
+    await assert.rejects(reviewCloudflareEvidence(dir, {
+      decision: "rejected",
+      rationale: "   "
+    }), /Cloudflare rejected bulk review requires --rationale/);
+
+    const result = await reviewCloudflareEvidence(dir, {
+      decision: "rejected",
+      rationale: "This Cloudflare signal is not in the certification scope.",
+      reviewedAt: new Date("2026-05-29T02:00:00.000Z")
+    });
+
+    assert.equal(result.reviewRecords, 1);
+    assert.equal(result.records[0]?.decision, "rejected");
+    assert.equal(result.records[0]?.rationale, "This Cloudflare signal is not in the certification scope.");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("reviewCloudflareEvidence does not downgrade existing accepted manual reviews", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-preserve-accepted-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 1).map((row) => JSON.stringify(row)).join("\n") + "\n");
+    const acceptedReview = {
+      schemaVersion: 1,
+      reviewed_at: "2026-05-29T00:00:00.000Z",
+      evidence_id: "ev_scan_cloudflare_cloudflare_waf",
+      requirement_id: "ISMS-P-2.10.2.cloudflare-config-export",
+      decision: "accepted",
+      reviewer: "security-owner",
+      rationale: "Owner confirmed operating evidence."
+    };
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify(acceptedReview) + "\n");
+
+    const result = await reviewCloudflareEvidence(dir, {
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T04:00:00.000Z")
+    });
+
+    assert.equal(result.reviewRecords, 0);
+    assert.equal(result.outputPath, undefined);
+    assert.deepEqual(result.skipped, [{
+      evidence_id: "ev_scan_cloudflare_cloudflare_waf",
+      reason: "existing accepted review decision for ISMS-P-2.10.2.cloudflare-config-export"
+    }]);
+
+    const rows = (await readFile(join(dir, "reviews", "evidence-review.jsonl"), "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(rows, [acceptedReview]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("reviewEvidence appends a human review record for an indexed evidence item", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-"));
   try {
@@ -357,6 +509,32 @@ test("exportPublicEvidence only exports public samples", async () => {
   }
 });
 
+test("public evidence validation and exports do not expose Cloudflare review rationale", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cloudflare-public-rationale-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 1).map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    const privateRationale = "Private review detail for internal audit follow-up.";
+    await reviewCloudflareEvidence(dir, {
+      rationale: privateRationale,
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T03:00:00.000Z")
+    });
+
+    const validation = await validateEvidence(dir, { public: true });
+    assert.equal(validation.valid, true);
+    assert.doesNotMatch(JSON.stringify(validation), new RegExp(privateRationale));
+
+    const exported = await exportPublicEvidence(dir);
+    assert.equal(exported.exportedEvidence, 0);
+    const content = await readFile(exported.outputPath, "utf8");
+    assert.equal(content, "");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("indexEvidenceFromScan reports a friendly error when scans are missing", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-index-missing-scans-"));
   try {
@@ -453,6 +631,73 @@ test("CLI supports evidence index, review, and export-public", async () => {
   }
 });
 
+test("CLI supports evidence review-cloudflare dry run and append flow", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cli-review-cloudflare-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 2).map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    const dryRun = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "evidence",
+      "review-cloudflare",
+      "--dry-run",
+      "--reviewer",
+      "security-owner"
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+    assert.equal(dryRun.status, 0, dryRun.stderr);
+    const dryRunParsed = JSON.parse(dryRun.stdout);
+    assert.equal(dryRunParsed.reviewRecords, 3);
+    assert.equal(dryRunParsed.outputPath, undefined);
+    assert.equal(dryRunParsed.preview[0].title, "Cloudflare candidate: WAF rulesets observed.");
+    assert.equal(dryRunParsed.preview[0].eligible, true);
+
+    const append = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "evidence",
+      "review-cloudflare",
+      "--decision",
+      "needs_followup",
+      "--reviewer",
+      "security-owner"
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+    assert.equal(append.status, 0, append.stderr);
+    const appended = JSON.parse(append.stdout);
+    assert.equal(appended.reviewRecords, 3);
+    assert.equal(String(appended.outputPath).endsWith("/reviews/evidence-review.jsonl"), true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("CLI rejects evidence review-cloudflare accepted decision", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cli-review-cloudflare-accepted-"));
+  try {
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "evidence",
+      "review-cloudflare",
+      "--decision",
+      "accepted"
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Cloudflare bulk review cannot auto-accept scanner evidence/);
+    assert.doesNotMatch(result.stderr, /Error:/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 function evidence(overrides: Partial<EvidenceItem> = {}): EvidenceItem {
   return {
     evidence_id: "ev_auth_policy",
@@ -502,4 +747,59 @@ function scanResult(overrides: Partial<ScanResult> = {}): ScanResult {
     ],
     ...overrides
   };
+}
+
+function cloudflareEvidenceRows(): EvidenceItem[] {
+  return [
+    evidence({
+      evidence_id: "ev_scan_cloudflare_cloudflare_waf",
+      title: "Cloudflare candidate: WAF rulesets observed.",
+      evidence_type: "connector_snapshot",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "scan",
+      supports: ["ISMS-P-2.10.2.cloudflare-config-export"],
+      locator: { kind: "scan_signal", value: "cloudflare:waf" },
+      summary: "Cloudflare WAF rulesets were observed.",
+      metadata: { signal_source: "cloudflare", product: "waf" }
+    }),
+    evidence({
+      evidence_id: "ev_scan_cloudflare_cloudflare_workers",
+      title: "Cloudflare candidate: Workers observed.",
+      evidence_type: "connector_snapshot",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "scan",
+      supports: ["ISMS-P-2.10.2.cloudflare-config-export", "ISMS-P-2.10.2.cloud-change-approval"],
+      locator: { kind: "scan_signal", value: "cloudflare:workers" },
+      summary: "Cloudflare Workers metadata was observed.",
+      metadata: { signal_source: "cloudflare", product: "workers" }
+    }),
+    evidence({
+      evidence_id: "ev_manual_policy",
+      origin: "manual",
+      supports: ["ISMS-P-2.10.2.cloud-policy"],
+      metadata: {}
+    }),
+    evidence({
+      evidence_id: "ev_scan_github_branch_protection",
+      evidence_type: "connector_snapshot",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "scan",
+      supports: ["ISMS-P-2.5.6.access-review"],
+      locator: { kind: "scan_signal", value: "github:branch-protection" },
+      metadata: { signal_source: "github" }
+    }),
+    evidence({
+      evidence_id: "ev_scan_cloudflare_unmapped",
+      evidence_type: "connector_snapshot",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "scan",
+      supports: [],
+      locator: { kind: "scan_signal", value: "cloudflare:unmapped" },
+      metadata: { signal_source: "cloudflare", product: "future-product" }
+    })
+  ];
 }

@@ -124,13 +124,13 @@ Cloudflare connector output is candidate metadata, not accepted audit evidence. 
 
 ```bash
 isms-agent evidence index
-isms-agent evidence review ev_scan_cloudflare_cloudflare_hyperdrive \
-  --requirement ISMS-P-2.10.2.cloudflare-config-export \
+isms-agent evidence review-cloudflare \
   --decision needs_followup \
-  --rationale "Cloud owner must confirm the exported configuration snapshot."
-isms-agent report --public
+  --reviewer security-owner
 isms-agent evidence validate --public
 ```
+
+`review-cloudflare` is a bulk overlay for Cloudflare scanner output. It marks configuration snapshots as `needs_followup` by default and writes one private review record per supported requirement. Bulk review can record only `needs_followup` or an explicit `rejected` decision for Cloudflare scanner output; it cannot create `accepted` decisions. Use `isms-agent evidence review <evidence-id>` only after a human owner confirms operating evidence such as an access review, change approval, or dated cloud security review.
 
 See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and evaluation service dry-run flow.
 

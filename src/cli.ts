@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
 import { parseAskContextArgs, runAskContext } from "./commands/ask-context.js";
-import { exportPublicEvidence, indexEvidenceFromScan, reviewEvidence, validateEvidence } from "./commands/evidence.js";
+import { CLOUDFLARE_BULK_ACCEPTED_ERROR, exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence } from "./commands/evidence.js";
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
 import { generatePack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
@@ -49,6 +49,21 @@ async function main(argv: string[]): Promise<void> {
     const parsed = parseEvidenceIndexArgs(args.slice(1));
     if (parsed) {
       const result = await indexEvidenceFromScan(process.cwd(), parsed);
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+  }
+
+  if (command === "evidence" && args[0] === "review-cloudflare") {
+    if (hasAcceptedCloudflareBulkDecision(args.slice(1))) {
+      console.error(CLOUDFLARE_BULK_ACCEPTED_ERROR);
+      process.exitCode = 1;
+      return;
+    }
+
+    const parsed = parseCloudflareEvidenceReviewArgs(args.slice(1));
+    if (parsed) {
+      const result = await reviewCloudflareEvidence(process.cwd(), parsed);
       console.log(JSON.stringify(result, null, 2));
       return;
     }
@@ -113,6 +128,7 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: isms-agent report [--public]");
   console.error("Usage: isms-agent evidence index [--from-scan scans/file.json]");
   console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>]");
+  console.error("Usage: isms-agent evidence review-cloudflare [--decision needs_followup|rejected] [--rationale <text>] [--reviewer <name>] [--dry-run]");
   console.error("Usage: isms-agent evidence export-public");
   console.error("Usage: isms-agent evidence validate [--public]");
   console.error("Usage: isms-agent pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
@@ -180,6 +196,61 @@ function parseEvidenceReviewArgs(args: string[]): {
   }
 
   return { evidenceId, requirementId, decision, rationale, ...(reviewer ? { reviewer } : {}), ...(expiresAt ? { expiresAt } : {}) };
+}
+
+function parseCloudflareEvidenceReviewArgs(args: string[]): {
+  decision?: "needs_followup" | "rejected";
+  rationale?: string;
+  reviewer?: string;
+  dryRun?: boolean;
+} | undefined {
+  let decision: "needs_followup" | "rejected" | undefined;
+  let rationale: string | undefined;
+  let reviewer: string | undefined;
+  let dryRun = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--dry-run") {
+      dryRun = true;
+      continue;
+    }
+
+    const value = args[index + 1];
+    if (!value || value.startsWith("--")) {
+      return undefined;
+    }
+
+    if (arg === "--decision") {
+      if (value !== "needs_followup" && value !== "rejected") {
+        return undefined;
+      }
+      decision = value;
+    } else if (arg === "--rationale") {
+      rationale = value;
+    } else if (arg === "--reviewer") {
+      reviewer = value;
+    } else {
+      return undefined;
+    }
+    index += 1;
+  }
+
+  return {
+    ...(decision ? { decision } : {}),
+    ...(rationale ? { rationale } : {}),
+    ...(reviewer ? { reviewer } : {}),
+    ...(dryRun ? { dryRun } : {})
+  };
+}
+
+function hasAcceptedCloudflareBulkDecision(args: string[]): boolean {
+  for (let index = 0; index < args.length - 1; index += 1) {
+    if (args[index] === "--decision" && args[index + 1] === "accepted") {
+      return true;
+    }
+  }
+  return false;
 }
 
 function parseScanOptions(args: string[]): ScanOptions | undefined {
