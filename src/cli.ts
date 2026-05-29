@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
 import { parseAskContextArgs, runAskContext } from "./commands/ask-context.js";
-import { validateEvidence } from "./commands/evidence.js";
+import { exportPublicEvidence, indexEvidenceFromScan, reviewEvidence, validateEvidence } from "./commands/evidence.js";
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
 import { generatePack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
@@ -34,11 +34,37 @@ async function main(argv: string[]): Promise<void> {
     }
   }
 
-  if (command === "report" && args.length === 0) {
-    const result = await generateReports(process.cwd());
-    console.log(result.outputPaths.backlog);
-    console.log(result.outputPaths.controlGapReport);
-    console.log(result.outputPaths.evidenceMap);
+  if (command === "report" && args.length <= 1) {
+    if (args.length === 0 || args[0] === "--public") {
+      const result = await generateReports(process.cwd(), { public: args[0] === "--public" });
+      console.log(result.outputPaths.backlog);
+      console.log(result.outputPaths.controlGapReport);
+      console.log(result.outputPaths.evidenceMap);
+      return;
+    }
+  }
+
+  if (command === "evidence" && args[0] === "index") {
+    const parsed = parseEvidenceIndexArgs(args.slice(1));
+    if (parsed) {
+      const result = await indexEvidenceFromScan(process.cwd(), parsed);
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+  }
+
+  if (command === "evidence" && args[0] === "review") {
+    const parsed = parseEvidenceReviewArgs(args.slice(1));
+    if (parsed) {
+      const result = await reviewEvidence(process.cwd(), parsed);
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+  }
+
+  if (command === "evidence" && args[0] === "export-public" && args.length === 1) {
+    const result = await exportPublicEvidence(process.cwd());
+    console.log(JSON.stringify(result, null, 2));
     return;
   }
 
@@ -83,12 +109,76 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: isms-agent init");
   console.error("Usage: isms-agent ingest <raw-file>");
   console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id]");
-  console.error("Usage: isms-agent report");
+  console.error("Usage: isms-agent report [--public]");
+  console.error("Usage: isms-agent evidence index [--from-scan scans/file.json]");
+  console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>]");
+  console.error("Usage: isms-agent evidence export-public");
   console.error("Usage: isms-agent evidence validate [--public]");
   console.error("Usage: isms-agent pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
   console.error("Usage: isms-agent pack validate [pack-dir]");
   console.error("Usage: isms-agent ask-context <question> [--json] [--markdown]");
   process.exitCode = 1;
+}
+
+function parseEvidenceIndexArgs(args: string[]): { fromScan?: string } | undefined {
+  if (args.length === 0) {
+    return {};
+  }
+  if (args.length === 2 && args[0] === "--from-scan" && args[1] && !args[1].startsWith("--")) {
+    return { fromScan: args[1] };
+  }
+  return undefined;
+}
+
+function parseEvidenceReviewArgs(args: string[]): {
+  evidenceId: string;
+  requirementId: string;
+  decision: "accepted" | "rejected" | "needs_followup";
+  rationale: string;
+  reviewer?: string;
+  expiresAt?: string;
+} | undefined {
+  const evidenceId = args[0];
+  if (!evidenceId || evidenceId.startsWith("--")) {
+    return undefined;
+  }
+
+  let requirementId: string | undefined;
+  let decision: "accepted" | "rejected" | "needs_followup" | undefined;
+  let rationale: string | undefined;
+  let reviewer: string | undefined;
+  let expiresAt: string | undefined;
+
+  for (let index = 1; index < args.length; index += 1) {
+    const arg = args[index];
+    const value = args[index + 1];
+    if (!value || value.startsWith("--")) {
+      return undefined;
+    }
+    if (arg === "--requirement") {
+      requirementId = value;
+    } else if (arg === "--decision") {
+      if (value !== "accepted" && value !== "rejected" && value !== "needs_followup") {
+        return undefined;
+      }
+      decision = value;
+    } else if (arg === "--rationale") {
+      rationale = value;
+    } else if (arg === "--reviewer") {
+      reviewer = value;
+    } else if (arg === "--expires-at") {
+      expiresAt = value;
+    } else {
+      return undefined;
+    }
+    index += 1;
+  }
+
+  if (!requirementId || !decision || !rationale) {
+    return undefined;
+  }
+
+  return { evidenceId, requirementId, decision, rationale, ...(reviewer ? { reviewer } : {}), ...(expiresAt ? { expiresAt } : {}) };
 }
 
 function parseScanOptions(args: string[]): ScanOptions | undefined {

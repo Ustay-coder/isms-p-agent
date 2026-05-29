@@ -14,6 +14,19 @@ The tool must not store API tokens, secret values, private keys, session secrets
 
 Scanners may record secret names or presence metadata when useful for readiness analysis, but secret values must be omitted or redacted.
 
+## Private Evidence Boundary
+
+Scanner output is not evidence acceptance. `isms-agent evidence index` turns scan signals into candidate evidence IDs, and `isms-agent evidence review` records human decisions in `reviews/evidence-review.jsonl`.
+
+The default workspace keeps real evidence local:
+
+- `evidence/private/` for real evidence files,
+- `reviews/` for review overlays,
+- `scans/` for connector and local scan outputs,
+- `reports/` for private reports.
+
+These paths are ignored by default. Public artifacts should be produced through `isms-agent report --public`, `isms-agent evidence export-public`, and `isms-agent evidence validate --public`.
+
 ## No Customer Or Personal Data Collection
 
 The MVP must not collect customer records, end-user records, employee personal data, incident payloads containing personal data, ticket bodies, chat exports, or other personal information.

@@ -8,6 +8,7 @@ import { stringifyJson } from "../../src/core/json.js";
 import { renderEvidenceMap } from "../../src/reports/evidence-map.js";
 import type { ControlAnalysisResult } from "../../src/schemas/analysis.js";
 import type { ControlKnowledge } from "../../src/schemas/control.js";
+import type { EvidenceItem } from "../../src/schemas/evidence.js";
 import type { ScanResult } from "../../src/schemas/scan.js";
 
 test("generateReports writes deterministic backlog, control gap, and evidence map markdown", async () => {
@@ -172,7 +173,7 @@ test("connector failure uncertainty remains reportable", async () => {
   }
 });
 
-test("reports include evidence review overlay decisions when present", async () => {
+test("reports include requirement rollup and evidence review overlay decisions when present", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-evidence-review-"));
   try {
     await mkdir(join(dir, "controls"), { recursive: true });
@@ -182,7 +183,29 @@ test("reports include evidence review overlay decisions when present", async () 
 
     await writeFile(join(dir, "controls", "2.5.3.json"), stringifyJson(control({
       control_id: "ISMS-P-2.5.3",
-      required_evidence: ["MFA and session configuration record"]
+      observable_signals: ["auth-private"],
+      required_evidence: ["MFA and session configuration record"],
+      requirements: [
+        {
+          requirement_id: "ISMS-P-2.5.3.admin-mfa",
+          control_id: "ISMS-P-2.5.3",
+          title: "Admin MFA enforcement",
+          kind: "configuration",
+          required: true,
+          evidence_types: ["configuration_export"],
+          freshness_days: 90,
+          source_refs: [{ sourcePath: "raw/isms.md", sha256: "abc123", excerpt: "authentication" }]
+        },
+        {
+          requirement_id: "ISMS-P-2.5.3.failed-login-limit",
+          control_id: "ISMS-P-2.5.3",
+          title: "Failed login limit",
+          kind: "configuration",
+          required: true,
+          evidence_types: ["configuration_export"],
+          source_refs: [{ sourcePath: "raw/isms.md", sha256: "abc123", excerpt: "authentication" }]
+        }
+      ]
     })));
     await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult()));
     await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify({
@@ -192,7 +215,7 @@ test("reports include evidence review overlay decisions when present", async () 
       classification: "confidential",
       lifecycle_status: "candidate",
       origin: "manual",
-      supports: ["ISMS-P-2.5.3.admin-mfa"],
+      supports: [],
       locator: { kind: "workspace_path", value: "project/evaluation/specs/Auth_Spec.md" },
       summary: "MFA configuration and session setting evidence candidate.",
       collected_at: "2026-05-28T00:00:00.000Z",
@@ -213,12 +236,204 @@ test("reports include evidence review overlay decisions when present", async () 
     const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
     const evidenceMap = await readFile(result.outputPaths.evidenceMap, "utf8");
 
+    assert.match(controlGap, /\*\*Status:\*\* partial/);
+    assert.match(controlGap, /\*\*Requirement status:\*\*/);
+    assert.match(controlGap, /ISMS-P-2\.5\.3\.admin-mfa: needs_followup; evidence ev_auth_mfa/);
+    assert.match(controlGap, /ISMS-P-2\.5\.3\.failed-login-limit: missing/);
     assert.match(controlGap, /\*\*Evidence review overlay:\*\*/);
     assert.match(controlGap, /ISMS-P-2\.5\.3\.admin-mfa/);
     assert.match(controlGap, /needs_followup/);
     assert.match(controlGap, /Production enforcement record is still required/);
     assert.match(evidenceMap, /Review overlay decision/);
     assert.match(evidenceMap, /ev_auth_mfa/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("generateReports public mode writes redacted reports without private paths or review rationale", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-public-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "2.5.3.json"), stringifyJson(control({
+      control_id: "ISMS-P-2.5.3",
+      required_evidence: ["MFA and session configuration record"],
+      requirements: [
+        {
+          requirement_id: "ISMS-P-2.5.3.admin-mfa",
+          control_id: "ISMS-P-2.5.3",
+          title: "Admin MFA enforcement",
+          kind: "configuration",
+          required: true,
+          evidence_types: ["configuration_export"],
+          source_refs: [{ sourcePath: "raw/private-source.md", sha256: "abc123", excerpt: "private source excerpt" }]
+        }
+      ]
+    })));
+    await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult({
+      signals: [
+        {
+          id: "auth-private",
+          source: "local-docs",
+          basis: "document-backed",
+          summary: "Private MFA runbook at evidence/private/mfa.md",
+          paths: ["evidence/private/mfa.md"],
+          metadata: {}
+        }
+      ]
+    })));
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify({
+      evidence_id: "ev_auth_mfa",
+      title: "Private production MFA configuration candidate",
+      evidence_type: "configuration_export",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "manual",
+      supports: ["ISMS-P-2.5.3.admin-mfa"],
+      locator: { kind: "workspace_path", value: "evidence/private/mfa.md" },
+      summary: "MFA private configuration evidence candidate.",
+      collected_at: "2026-05-28T00:00:00.000Z",
+      review_required: true,
+      metadata: {}
+    }) + "\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify({
+      schemaVersion: 1,
+      reviewed_at: "2026-05-28T01:00:00.000Z",
+      evidence_id: "ev_auth_mfa",
+      requirement_id: "ISMS-P-2.5.3.admin-mfa",
+      decision: "accepted",
+      reviewer: "security-owner",
+      rationale: "Private MFA runbook at evidence/private/mfa.md confirms enforcement."
+    }) + "\n");
+
+    const result = await generateReports(dir, { public: true });
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+    const evidenceMap = await readFile(result.outputPaths.evidenceMap, "utf8");
+
+    assert.equal(result.outputPaths.controlGapReport, join(dir, "reports", "public-control-gap-report.md"));
+    assert.match(controlGap, /Public-safe report/);
+    assert.match(controlGap, /ev_auth_mfa/);
+    assert.doesNotMatch(controlGap, /evidence\/private/);
+    assert.doesNotMatch(controlGap, /Private MFA runbook/);
+    assert.doesNotMatch(controlGap, /Private production MFA/);
+    assert.doesNotMatch(controlGap, /private source excerpt/);
+    assert.doesNotMatch(evidenceMap, /evidence\/private/);
+    assert.doesNotMatch(evidenceMap, /Private MFA runbook/);
+    assert.doesNotMatch(evidenceMap, /Private production MFA/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("requirement rollup treats rejected evidence as missing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-rejected-evidence-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "2.5.3.json"), stringifyJson(control({
+      control_id: "ISMS-P-2.5.3",
+      requirements: [{
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        control_id: "ISMS-P-2.5.3",
+        title: "Admin MFA enforcement",
+        kind: "configuration",
+        required: true,
+        evidence_types: ["configuration_export"],
+        source_refs: []
+      }]
+    })));
+    await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult()));
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify({
+      evidence_id: "ev_auth_mfa",
+      title: "MFA configuration candidate",
+      evidence_type: "configuration_export",
+      classification: "confidential",
+      lifecycle_status: "candidate",
+      origin: "manual",
+      supports: [],
+      locator: { kind: "workspace_path", value: "evidence/private/mfa.md" },
+      summary: "MFA private configuration evidence candidate.",
+      collected_at: "2026-05-28T00:00:00.000Z",
+      review_required: true,
+      metadata: {}
+    }) + "\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify({
+      schemaVersion: 1,
+      reviewed_at: "2026-05-28T01:00:00.000Z",
+      evidence_id: "ev_auth_mfa",
+      requirement_id: "ISMS-P-2.5.3.admin-mfa",
+      decision: "rejected",
+      rationale: "Wrong evidence."
+    }) + "\n");
+
+    const result = await generateReports(dir);
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+
+    assert.match(controlGap, /ISMS-P-2\.5\.3\.admin-mfa: missing/);
+    assert.doesNotMatch(controlGap, /ISMS-P-2\.5\.3\.admin-mfa: candidate/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("requirement rollup accepts a current replacement when another accepted review is expired", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-report-expired-replacement-"));
+  try {
+    await mkdir(join(dir, "controls"), { recursive: true });
+    await mkdir(join(dir, "scans"), { recursive: true });
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+
+    await writeFile(join(dir, "controls", "2.5.3.json"), stringifyJson(control({
+      control_id: "ISMS-P-2.5.3",
+      requirements: [{
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        control_id: "ISMS-P-2.5.3",
+        title: "Admin MFA enforcement",
+        kind: "configuration",
+        required: true,
+        evidence_types: ["configuration_export"],
+        source_refs: []
+      }]
+    })));
+    await writeFile(join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json"), stringifyJson(scanResult()));
+    await writeFile(join(dir, "evidence", "index.jsonl"), [
+      JSON.stringify(evidence({ evidence_id: "ev_old", supports: [] })),
+      JSON.stringify(evidence({ evidence_id: "ev_new", supports: [] }))
+    ].join("\n") + "\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), [
+      JSON.stringify({
+        schemaVersion: 1,
+        reviewed_at: "2026-05-28T01:00:00.000Z",
+        evidence_id: "ev_old",
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        decision: "accepted",
+        rationale: "Old evidence.",
+        expires_at: "2020-01-01T00:00:00.000Z"
+      }),
+      JSON.stringify({
+        schemaVersion: 1,
+        reviewed_at: "2026-05-28T02:00:00.000Z",
+        evidence_id: "ev_new",
+        requirement_id: "ISMS-P-2.5.3.admin-mfa",
+        decision: "accepted",
+        rationale: "Replacement evidence.",
+        expires_at: "2999-01-01T00:00:00.000Z"
+      })
+    ].join("\n") + "\n");
+
+    const result = await generateReports(dir);
+    const controlGap = await readFile(result.outputPaths.controlGapReport, "utf8");
+
+    assert.match(controlGap, /ISMS-P-2\.5\.3\.admin-mfa: met/);
+    assert.doesNotMatch(controlGap, /ISMS-P-2\.5\.3\.admin-mfa: expired/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -342,6 +557,27 @@ function analysisResult(overrides: Partial<ControlAnalysisResult> = {}): Control
     confidence: "medium",
     judgment_basis: "observed",
     source_refs: [{ sourcePath: "raw/cloud.md", sha256: "def456", excerpt: "cloud" }],
+    ...overrides
+  };
+}
+
+function evidence(overrides: Partial<EvidenceItem> = {}): EvidenceItem {
+  return {
+    evidence_id: "ev_auth_policy",
+    title: "Authentication policy candidate",
+    evidence_type: "policy_document",
+    classification: "internal",
+    lifecycle_status: "candidate",
+    origin: "manual",
+    supports: ["ISMS-P-2.5.3.auth-policy"],
+    locator: {
+      kind: "workspace_path",
+      value: "project/evaluation/specs/Auth_Spec.md"
+    },
+    summary: "Auth policy exists as candidate evidence.",
+    collected_at: "2026-05-28T00:00:00.000Z",
+    review_required: true,
+    metadata: {},
     ...overrides
   };
 }

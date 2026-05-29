@@ -32,11 +32,18 @@ flowchart TD
   H["GitHub, Vercel, Cloudflare metadata"] --> I["read-only connector scans"]
   F --> J["scans/*.json"]
   I --> J
+  J --> S["evidence index"]
+  S --> T["evidence/index.jsonl"]
+  T --> U["human evidence review"]
+  U --> V["reviews/evidence-review.jsonl"]
   D --> K["conservative analyzer"]
   J --> K
+  T --> K
+  V --> K
   K --> L["reports/backlog.md"]
   K --> M["reports/control-gap-report.md"]
   K --> N["reports/evidence-map.md"]
+  K --> W["public report/export guard"]
   D --> O["ask-context"]
   J --> O
   O --> P["Codex or Claude Code grounded answer"]
@@ -47,7 +54,10 @@ The intended flow is:
 1. Keep official and user-provided sources under `raw/`.
 2. Ingest Markdown sources into `controls/` JSON and `wiki/` source indexes with provenance.
 3. Scan local files and optional SaaS metadata in read-only mode.
-4. Generate Markdown reports that separate observed state, uncertainty, gaps, and candidate evidence.
+4. Convert scanner signals into candidate evidence IDs with `evidence index`.
+5. Record human review decisions in the append-only review overlay.
+6. Generate Markdown reports that separate observed state, uncertainty, gaps, candidate evidence, and accepted review decisions.
+7. Use public validation/export commands before publishing any example output.
 
 ## MVP Workflow
 
@@ -62,7 +72,14 @@ isms-agent ingest raw/example.md
 isms-agent scan --local
 isms-agent scan --local --target project/evaluation
 isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs --exclude __tests__
+isms-agent evidence index
+isms-agent evidence review ev_scan_local_docs_auth_mfa \
+  --requirement ISMS-P-2.5.3.admin-mfa \
+  --decision needs_followup \
+  --rationale "Production enforcement record is still required."
 isms-agent report
+isms-agent report --public
+isms-agent evidence export-public
 isms-agent evidence validate --public
 isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
 ```
@@ -112,10 +129,12 @@ reviews/           human review overlay records, ignored by default
 Run the public safety gate before publishing examples or reports:
 
 ```bash
+isms-agent evidence export-public
+isms-agent report --public
 isms-agent evidence validate --public
 ```
 
-The validator fails when private evidence, scans, reports, or review overlays are tracked by git, or when public evidence metadata contains unsafe classifications or credential-like values.
+The validator fails when private evidence, scans, reports, or review overlays are tracked by git, or when public evidence metadata contains unsafe classifications or credential-like values. `report --public` and `evidence export-public` omit locators, raw payloads, source excerpts, private paths, and review rationale.
 
 ## Control Knowledge Pack v0
 

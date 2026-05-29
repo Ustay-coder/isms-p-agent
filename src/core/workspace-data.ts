@@ -1,7 +1,8 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { loadEvidenceIndex, loadEvidenceReviews } from "../commands/evidence.js";
 import type { ControlKnowledge } from "../schemas/control.js";
-import type { EvidenceItem, EvidenceReviewRecord, EvidenceReviewSummary } from "../schemas/evidence.js";
+import type { EvidenceReviewRecord, EvidenceReviewSummary } from "../schemas/evidence.js";
 import type { ScanResult } from "../schemas/scan.js";
 
 export async function loadControls(workspaceRoot: string): Promise<ControlKnowledge[]> {
@@ -85,36 +86,6 @@ export async function loadEvidenceReviewSummaries(workspaceRoot: string): Promis
         title: item?.title
       };
     });
-}
-
-async function loadEvidenceIndex(workspaceRoot: string): Promise<EvidenceItem[]> {
-  try {
-    return parseJsonl<EvidenceItem>(await readFile(join(workspaceRoot, "evidence", "index.jsonl"), "utf8"));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-    throw error;
-  }
-}
-
-async function loadEvidenceReviews(workspaceRoot: string): Promise<EvidenceReviewRecord[]> {
-  try {
-    return parseJsonl<EvidenceReviewRecord>(await readFile(join(workspaceRoot, "reviews", "evidence-review.jsonl"), "utf8"));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-    throw error;
-  }
-}
-
-function parseJsonl<T>(content: string): T[] {
-  return content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line) as T);
 }
 
 async function jsonFileNames(directory: string): Promise<string[]> {
