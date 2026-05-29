@@ -26,7 +26,8 @@ flowchart TD
   B --> C["wiki/ source indexes"]
   B --> D["controls/*.json"]
   Q["packs/isms-p-core-v0"] --> R["pack validate"]
-  R --> D
+  R --> X["pack install"]
+  X --> D
   E["project/ operating documents"] --> F["scan --local"]
   G["local repository metadata"] --> F
   H["GitHub, Vercel, Cloudflare metadata"] --> I["read-only connector scans"]
@@ -207,11 +208,19 @@ The validator rejects public-pack safety problems such as private overlay paths,
 Install a curated pack into a workspace before generating reports:
 
 ```bash
-isms-agent pack install packs/isms-p-core-v0 --overwrite
-isms-agent report --public
+isms-agent pack install packs/isms-p-core-v0
+isms-agent scan --local
+isms-agent evidence index
+isms-agent report
 ```
 
-`pack install` validates the pack first, then copies public control JSON files into `controls/`. Existing workspace controls are preserved unless `--overwrite` is passed.
+Use `--overwrite` only when you intentionally want curated pack controls to replace local workspace controls:
+
+```bash
+isms-agent pack install packs/isms-p-core-v0 --overwrite
+```
+
+`pack install` validates the pack first, then copies public control JSON files into `controls/`. `installedControls` means controls that are now present and up to date after the install, including pre-existing files that already matched the pack. `skippedControls` means existing local files were preserved because they differ from the pack and `--overwrite` was not requested.
 
 If files already exist, review them before replacing local workspace controls.
 

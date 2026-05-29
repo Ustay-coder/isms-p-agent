@@ -91,7 +91,7 @@ export async function generatePack(options: PackGenerateCliOptions): Promise<Gen
 }
 
 export async function installPack(workspaceRoot: string, options: PackInstallOptions): Promise<PackInstallResult> {
-  const packRoot = resolve(process.cwd(), options.packRoot);
+  const packRoot = resolve(workspaceRoot, options.packRoot);
   const validation = await validatePack(packRoot);
   if (!validation.valid) {
     throw new Error(`Pack is invalid and cannot be installed: ${validation.issues.join("; ")}`);
