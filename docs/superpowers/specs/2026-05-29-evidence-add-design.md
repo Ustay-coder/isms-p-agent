@@ -149,7 +149,7 @@ flowchart TD
   A["Private operating evidence file"] --> B["evidence add"]
   B --> C["Validate path under evidence/private/"]
   C --> D["Compute content hash"]
-  D --> E["Rewrite sorted evidence/index.jsonl atomically"]
+  D --> E["Rewrite sorted evidence/index.jsonl"]
   E --> F["Manual evidence item: needs_review"]
   F --> G["evidence review --decision accepted"]
   G --> H["reviews/evidence-review.jsonl stores private_evidence_path"]
@@ -163,7 +163,7 @@ flowchart TD
 Default behavior:
 
 - if `evidence_id` already exists, fail with a clear error,
-- do not partially modify `evidence/index.jsonl`.
+- do not modify `evidence/index.jsonl` after a validation failure.
 
 Write behavior:
 
