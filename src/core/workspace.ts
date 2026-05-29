@@ -8,7 +8,11 @@ export const WORKSPACE_DIRECTORIES = [
   "project",
   "connectors",
   "scans",
-  "reports"
+  "reports",
+  "evidence",
+  "evidence/private",
+  "evidence/redacted",
+  "reviews"
 ] as const;
 
 export async function ensureWorkspaceDirectories(root: string): Promise<void> {

@@ -63,6 +63,7 @@ isms-agent scan --local
 isms-agent scan --local --target project/evaluation
 isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs --exclude __tests__
 isms-agent report
+isms-agent evidence validate --public
 isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
 ```
 
@@ -76,6 +77,8 @@ project/      service context and operating documents
 connectors/   connector configuration notes
 scans/        scanner JSON outputs
 reports/      Markdown backlog, gap report, and evidence map
+evidence/     private evidence pointers and redacted public samples
+reviews/      human review overlays for evidence and applicability
 ```
 
 Use `--target <path>` when the workspace contains multiple services or copied repositories. Local scanner paths remain relative to the ISMS-P workspace root, but file discovery is limited to the target directory. Use `--include` and `--exclude` with comma-separated, target-relative paths to narrow the scan to source, specs, or operating documents. The scanner also skips common dependency, build, report, planning/cache, and agent-runtime directories such as `node_modules`, `.next`, `.open-next`, `.planning`, `.claude`, `.playwright-mcp`, `scans`, and `reports`.
@@ -93,6 +96,26 @@ isms-agent ask-context "사용자 인증 증적은 무엇이 부족해?"
 Default output is JSON for agent callers. `--markdown` prints the same context in a compact human-readable form.
 
 The command is read-only. It reuses the existing conservative analyzer, returns candidate evidence only, and includes answer constraints so the calling agent does not claim certification readiness from evidence existence alone.
+
+## Private Evidence and Public Safety
+
+Evidence found by scanners is candidate evidence only. Real service evidence should stay in the local workspace and should not be committed to the public repository.
+
+`isms-agent init` creates private evidence directories and default ignore rules:
+
+```text
+evidence/private/  real evidence files, ignored by default
+evidence/redacted/ optional sanitized examples
+reviews/           human review overlay records, ignored by default
+```
+
+Run the public safety gate before publishing examples or reports:
+
+```bash
+isms-agent evidence validate --public
+```
+
+The validator fails when private evidence, scans, reports, or review overlays are tracked by git, or when public evidence metadata contains unsafe classifications or credential-like values.
 
 ## Control Knowledge Pack v0
 

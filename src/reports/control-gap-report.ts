@@ -17,6 +17,7 @@ export function renderControlGapReport(analyses: ControlAnalysisResult[]): strin
     markdownList(result.missing, "No missing items identified."),
     "**Recommended actions:**",
     markdownList(result.recommended_actions, "No recommended actions generated."),
+    evidenceReviewSection(result),
     "**Required candidate evidence:**",
     markdownList(result.required_evidence, "No required evidence recorded."),
     "**Source refs:**",
@@ -36,4 +37,20 @@ function compareControlResults(left: ControlAnalysisResult, right: ControlAnalys
 
 function isDeletedResidualRisk(result: ControlAnalysisResult): boolean {
   return result.pack?.effective_status === "deleted_residual_risk";
+}
+
+function evidenceReviewSection(result: ControlAnalysisResult): string | undefined {
+  if (!result.evidence_reviews || result.evidence_reviews.length === 0) {
+    return undefined;
+  }
+
+  return [
+    "**Evidence review overlay:**",
+    markdownList(result.evidence_reviews.map((review) => {
+      const reviewer = review.reviewer ? ` by ${review.reviewer}` : "";
+      const expires = review.expires_at ? `; expires ${review.expires_at}` : "";
+      const title = review.title ? ` (${review.title})` : "";
+      return `${review.requirement_id}: ${review.decision}${reviewer} for ${review.evidence_id}${title}${expires} - ${review.rationale}`;
+    }))
+  ].join("\n\n");
 }

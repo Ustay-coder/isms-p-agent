@@ -26,7 +26,7 @@ export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
     }
 
     const candidateEvidence = result.required_evidence.length > 0 ? result.required_evidence : ["Control owner-defined candidate evidence"];
-    return candidateEvidence.map((evidence) => [
+    const evidenceRows = candidateEvidence.map((evidence) => [
       `${result.control_id} ${result.title}`,
       evidence,
       whereEvidenceMightComeFrom(result),
@@ -34,6 +34,17 @@ export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
       operationCoverage(result),
       humanReviewNeeded(result)
     ]);
+
+    const reviewRows = (result.evidence_reviews ?? []).map((review) => [
+      `${result.control_id} ${result.title}`,
+      `Review overlay decision: ${review.requirement_id}`,
+      `${review.evidence_id}${review.title ? ` (${review.title})` : ""}`,
+      review.decision,
+      review.classification ? `classification: ${review.classification}` : "classification not indexed",
+      review.rationale
+    ]);
+
+    return [...evidenceRows, ...reviewRows];
   });
 
   return [

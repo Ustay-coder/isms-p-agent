@@ -1,4 +1,5 @@
 import type { ControlPackMetadata, SourceRef } from "./control.js";
+import type { EvidenceReviewSummary } from "./evidence.js";
 
 export type ControlStatus = "satisfied" | "partial" | "gap" | "not_applicable" | "needs_confirmation";
 
@@ -18,4 +19,5 @@ export interface ControlAnalysisResult {
   judgment_basis: JudgmentBasis;
   source_refs: SourceRef[];
   pack?: ControlPackMetadata;
+  evidence_reviews?: EvidenceReviewSummary[];
 }
