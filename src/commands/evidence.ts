@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { isAbsolute, join, relative } from "node:path";
+import { createHash } from "node:crypto";
+import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { EvidenceItem } from "../schemas/evidence.js";
+import type { EvidenceItem, EvidenceReviewRecord, ReviewDecision } from "../schemas/evidence.js";
+import type { ScanResult, ScanSignal } from "../schemas/scan.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -14,6 +16,7 @@ const PRIVATE_TRACKED_PREFIXES = [
 ];
 
 const UNSAFE_PUBLIC_CLASSIFICATIONS = new Set(["secret", "personal_data"]);
+const PUBLIC_EXPORT_CLASSIFICATIONS = new Set(["public_sample"]);
 
 export interface EvidenceValidateOptions {
   public?: boolean;
@@ -26,6 +29,125 @@ export interface EvidenceValidationResult {
   checkedEvidence: number;
   issues: string[];
   warnings: string[];
+}
+
+export interface EvidenceIndexOptions {
+  fromScan?: string;
+}
+
+export interface EvidenceIndexResult {
+  outputPath: string;
+  scanPath: string;
+  indexedEvidence: number;
+  signalCount: number;
+}
+
+export interface EvidenceReviewOptions {
+  evidenceId: string;
+  requirementId: string;
+  decision: ReviewDecision;
+  rationale: string;
+  reviewer?: string;
+  expiresAt?: string;
+  reviewedAt?: Date;
+}
+
+export interface EvidenceReviewResult {
+  outputPath: string;
+  record: EvidenceReviewRecord;
+}
+
+export interface PublicEvidenceExportResult {
+  outputPath: string;
+  exportedEvidence: number;
+  omittedEvidence: number;
+}
+
+export async function indexEvidenceFromScan(
+  workspaceRoot: string,
+  options: EvidenceIndexOptions = {}
+): Promise<EvidenceIndexResult> {
+  const scanPath = options.fromScan
+    ? resolveWorkspacePath(workspaceRoot, options.fromScan, "Scan path")
+    : await latestScanPath(workspaceRoot);
+  const scan = JSON.parse(await readFile(scanPath, "utf8")) as ScanResult;
+  const existingEvidence = await loadEvidenceIndex(workspaceRoot);
+  const nonScanEvidence = existingEvidence.filter((item) => item.origin !== "scan");
+  const evidence = [...nonScanEvidence, ...scan.signals.map((signal) => evidenceFromSignal(signal, scan.generatedAt))];
+  evidence.sort((left, right) => left.evidence_id.localeCompare(right.evidence_id, "en"));
+
+  const outputPath = join(workspaceRoot, "evidence", "index.jsonl");
+  await mkdir(join(workspaceRoot, "evidence"), { recursive: true });
+  await writeFile(outputPath, evidence.map((item) => JSON.stringify(item)).join("\n") + (evidence.length > 0 ? "\n" : ""));
+
+  return {
+    outputPath,
+    scanPath,
+    indexedEvidence: evidence.length,
+    signalCount: scan.signals.length
+  };
+}
+
+export async function reviewEvidence(
+  workspaceRoot: string,
+  options: EvidenceReviewOptions
+): Promise<EvidenceReviewResult> {
+  const evidence = await loadEvidenceIndex(workspaceRoot);
+  if (!evidence.some((item) => item.evidence_id === options.evidenceId)) {
+    throw new Error(`Evidence id not found in evidence/index.jsonl: ${options.evidenceId}`);
+  }
+
+  if (!options.requirementId.trim()) {
+    throw new Error("Evidence review requires --requirement.");
+  }
+  if (!options.rationale.trim()) {
+    throw new Error("Evidence review requires --rationale.");
+  }
+
+  const record: EvidenceReviewRecord = {
+    schemaVersion: 1,
+    reviewed_at: (options.reviewedAt ?? new Date()).toISOString(),
+    evidence_id: options.evidenceId,
+    requirement_id: options.requirementId,
+    decision: options.decision,
+    ...(options.reviewer ? { reviewer: options.reviewer } : {}),
+    rationale: options.rationale,
+    ...(options.expiresAt ? { expires_at: options.expiresAt } : {})
+  };
+
+  const outputPath = join(workspaceRoot, "reviews", "evidence-review.jsonl");
+  await mkdir(join(workspaceRoot, "reviews"), { recursive: true });
+  await appendFile(outputPath, JSON.stringify(record) + "\n");
+  return { outputPath, record };
+}
+
+export async function exportPublicEvidence(workspaceRoot: string): Promise<PublicEvidenceExportResult> {
+  const evidence = await loadEvidenceIndex(workspaceRoot);
+  const safeEvidence = evidence
+    .filter((item) => PUBLIC_EXPORT_CLASSIFICATIONS.has(item.classification))
+    .map((item) => ({
+      evidence_id: item.evidence_id,
+      title: sanitizePublicText(item.title),
+      evidence_type: item.evidence_type,
+      classification: item.classification,
+      lifecycle_status: item.lifecycle_status,
+      origin: item.origin,
+      supports: item.supports,
+      summary: sanitizePublicText(item.summary),
+      collected_at: item.collected_at,
+      review_required: item.review_required
+    }))
+    .sort((left, right) => left.evidence_id.localeCompare(right.evidence_id, "en"));
+
+  const outputPath = join(workspaceRoot, "evidence", "redacted", "public-evidence-index.jsonl");
+  await mkdir(join(workspaceRoot, "evidence", "redacted"), { recursive: true });
+  await writeFile(outputPath, safeEvidence.map((item) => JSON.stringify(item)).join("\n") + (safeEvidence.length > 0 ? "\n" : ""));
+
+  return {
+    outputPath,
+    exportedEvidence: safeEvidence.length,
+    omittedEvidence: evidence.length - safeEvidence.length
+  };
 }
 
 export async function validateEvidence(
@@ -43,8 +165,16 @@ export async function validateEvidence(
   }
 
   const evidence = await loadEvidenceIndex(workspaceRoot);
+  const reviews = await loadEvidenceReviews(workspaceRoot);
+  const reviewKeys = new Set(reviews.map((review) => `${review.evidence_id}\0${review.requirement_id}`));
+  const reviewRequirementsByEvidence = new Map<string, Set<string>>();
+  for (const review of reviews) {
+    const requirements = reviewRequirementsByEvidence.get(review.evidence_id) ?? new Set<string>();
+    requirements.add(review.requirement_id);
+    reviewRequirementsByEvidence.set(review.evidence_id, requirements);
+  }
   for (const item of evidence) {
-    validateEvidenceItem(item, workspaceRoot, publicMode, issues, warnings);
+    validateEvidenceItem(item, workspaceRoot, publicMode, reviewKeys, reviewRequirementsByEvidence, issues, warnings);
   }
 
   return {
@@ -61,15 +191,24 @@ function validateEvidenceItem(
   item: EvidenceItem,
   workspaceRoot: string,
   publicMode: boolean,
+  reviewKeys: Set<string>,
+  reviewRequirementsByEvidence: Map<string, Set<string>>,
   issues: string[],
   warnings: string[]
 ): void {
-  if (item.supports.length === 0) {
+  if (item.supports.length === 0 && !reviewRequirementsByEvidence.has(item.evidence_id)) {
     warnings.push(`evidence ${item.evidence_id} has no requirement mapping.`);
   }
 
   if (item.lifecycle_status === "accepted" && item.valid_until && Date.parse(item.valid_until) < Date.now()) {
     warnings.push(`accepted evidence ${item.evidence_id} is expired as of ${item.valid_until}.`);
+  }
+
+  if ((item.lifecycle_status === "candidate" || item.lifecycle_status === "needs_review") && item.supports.length > 0) {
+    const unreviewed = item.supports.filter((requirementId) => !reviewKeys.has(`${item.evidence_id}\0${requirementId}`));
+    if (unreviewed.length > 0) {
+      warnings.push(`evidence ${item.evidence_id} has candidate requirement mapping but no review decision: ${unreviewed.join(", ")}`);
+    }
   }
 
   if (!publicMode) {
@@ -90,10 +229,22 @@ function validateEvidenceItem(
   }
 }
 
-async function loadEvidenceIndex(workspaceRoot: string): Promise<EvidenceItem[]> {
+export async function loadEvidenceIndex(workspaceRoot: string): Promise<EvidenceItem[]> {
   const path = join(workspaceRoot, "evidence", "index.jsonl");
   try {
     return parseJsonl<EvidenceItem>(await readFile(path, "utf8"), path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function loadEvidenceReviews(workspaceRoot: string): Promise<EvidenceReviewRecord[]> {
+  const path = join(workspaceRoot, "reviews", "evidence-review.jsonl");
+  try {
+    return parseJsonl<EvidenceReviewRecord>(await readFile(path, "utf8"), path);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return [];
@@ -156,6 +307,12 @@ function redactPath(path: string, workspaceRoot: string): string {
   return relativePath.startsWith("..") ? "[absolute-path-redacted]" : relativePath;
 }
 
+function sanitizePublicText(value: string): string {
+  return value
+    .replace(/(?:^|\s)(?:evidence\/private|reviews|scans|reports)\/[^\s),;]+/g, " [private-detail-omitted]")
+    .replace(/\/[^\s),;]*(?:evidence\/private|reviews|scans|reports)\/[^\s),;]+/g, "[private-detail-omitted]");
+}
+
 function credentialLikeMetadataPath(metadata: Record<string, string | number | boolean | string[]>): string | undefined {
   for (const [key, value] of Object.entries(metadata)) {
     const loweredKey = key.toLowerCase();
@@ -176,4 +333,125 @@ function credentialLikeMetadataPath(metadata: Record<string, string | number | b
 function looksLikeSecret(value: string): boolean {
   return /(sk_live|sk_test|ghp_|github_pat_|xox[baprs]-|AKIA|-----BEGIN [A-Z ]+PRIVATE KEY-----)/.test(value)
     || /[A-Za-z0-9_=-]{32,}/.test(value);
+}
+
+async function latestScanPath(workspaceRoot: string): Promise<string> {
+  const scansDir = join(workspaceRoot, "scans");
+  let names: string[];
+  try {
+    names = (await readdir(scansDir)).filter((name) => name.endsWith(".json"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error("No scan JSON files found in scans/. Run isms-agent scan before evidence index.");
+    }
+    throw error;
+  }
+  if (names.length === 0) {
+    throw new Error("No scan JSON files found in scans/. Run isms-agent scan before evidence index.");
+  }
+
+  const candidates = [];
+  for (const name of names) {
+    const path = join(scansDir, name);
+    const scan = JSON.parse(await readFile(path, "utf8")) as ScanResult;
+    const generatedAtMs = Date.parse(scan.generatedAt);
+    const fallbackMtimeMs = (await stat(path)).mtimeMs;
+    candidates.push({
+      path,
+      name,
+      sortTimeMs: Number.isFinite(generatedAtMs) ? generatedAtMs : fallbackMtimeMs
+    });
+  }
+
+  candidates.sort((left, right) => {
+    const timeComparison = left.sortTimeMs - right.sortTimeMs;
+    return timeComparison === 0 ? left.name.localeCompare(right.name, "en") : timeComparison;
+  });
+
+  return candidates.at(-1)?.path ?? "";
+}
+
+function resolveWorkspacePath(workspaceRoot: string, inputPath: string, label: string): string {
+  const workspace = resolve(workspaceRoot);
+  const resolved = resolve(workspace, inputPath);
+  const relativePath = relative(workspace, resolved);
+  if (relativePath === ".." || relativePath.startsWith("../") || isAbsolute(relativePath)) {
+    throw new Error(`${label} must be inside the workspace: ${inputPath}`);
+  }
+  return resolved;
+}
+
+function evidenceFromSignal(signal: ScanSignal, collectedAt: string): EvidenceItem {
+  return {
+    evidence_id: scanEvidenceId(signal),
+    title: `${sourceLabel(signal.source)} candidate: ${signal.summary}`,
+    evidence_type: evidenceTypeForSignal(signal),
+    classification: signal.source === "cloudflare" || signal.source === "github" || signal.source === "vercel" ? "confidential" : "internal",
+    lifecycle_status: "candidate",
+    origin: "scan",
+    supports: requirementIdsFromSignal(signal),
+    locator: {
+      kind: "scan_signal",
+      value: signal.id
+    },
+    summary: signal.summary,
+    content_sha256: sha256(JSON.stringify(signal)),
+    collected_at: collectedAt,
+    review_required: true,
+    metadata: {
+      signal_id: signal.id,
+      signal_source: signal.source,
+      signal_basis: signal.basis,
+      path_count: signal.paths.length
+    }
+  };
+}
+
+function scanEvidenceId(signal: ScanSignal): string {
+  const base = `ev_scan_${slug(signal.source)}_${slug(signal.id)}`;
+  return base.length <= 96 ? base : `${base.slice(0, 84)}_${sha256(base).slice(0, 10)}`;
+}
+
+function requirementIdsFromSignal(signal: ScanSignal): string[] {
+  const values = [
+    metadataStrings(signal.metadata.requirement_id),
+    metadataStrings(signal.metadata.requirement_ids),
+    metadataStrings(signal.metadata.supports)
+  ].flat();
+  return [...new Set(values.filter((value) => value.startsWith("ISMS-P-")).sort((left, right) => left.localeCompare(right, "en")))];
+}
+
+function metadataStrings(value: string | number | boolean | string[] | undefined): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((entry): entry is string => typeof entry === "string");
+  }
+  return typeof value === "string" ? [value] : [];
+}
+
+function evidenceTypeForSignal(signal: ScanSignal): EvidenceItem["evidence_type"] {
+  if (signal.source === "local-repo") {
+    return "implementation_file";
+  }
+  if (signal.source === "local-docs") {
+    return "procedure_document";
+  }
+  return "connector_snapshot";
+}
+
+function sourceLabel(source: ScanSignal["source"]): string {
+  if (source === "local-docs") {
+    return "Local docs";
+  }
+  if (source === "local-repo") {
+    return "Local repo";
+  }
+  return source[0]?.toUpperCase() + source.slice(1);
+}
+
+function slug(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "signal";
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
 }

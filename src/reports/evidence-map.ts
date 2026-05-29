@@ -1,7 +1,8 @@
 import type { ControlAnalysisResult } from "../schemas/analysis.js";
 import { markdownTable } from "./markdown.js";
+import type { ReportRenderOptions } from "./control-gap-report.js";
 
-export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
+export function renderEvidenceMap(analyses: ControlAnalysisResult[], options: ReportRenderOptions = {}): string {
   const rows = [...analyses].sort(compareControlResults).flatMap((result) => {
     if (isDeletedResidualRisk(result)) {
       return [[
@@ -35,6 +36,15 @@ export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
       humanReviewNeeded(result)
     ]);
 
+    const requirementRows = (result.requirement_evaluations ?? []).map((requirement) => [
+      `${result.control_id} ${result.title}`,
+      `Requirement status: ${requirement.requirement_id}`,
+      requirement.evidence_ids.length > 0 ? requirement.evidence_ids.join(", ") : "no indexed evidence",
+      requirement.status,
+      requirement.required ? "required" : "optional",
+      requirement.next_action
+    ]);
+
     const reviewRows = (result.evidence_reviews ?? []).map((review) => [
       `${result.control_id} ${result.title}`,
       `Review overlay decision: ${review.requirement_id}`,
@@ -44,12 +54,14 @@ export function renderEvidenceMap(analyses: ControlAnalysisResult[]): string {
       review.rationale
     ]);
 
-    return [...evidenceRows, ...reviewRows];
+    return [...evidenceRows, ...requirementRows, ...reviewRows];
   });
 
   return [
     "# Evidence Map",
-    "This map lists candidate evidence only. Human review is required before certification use.",
+    options.public
+      ? "Public-safe evidence map. Private paths, connector payloads, and review rationale are omitted."
+      : "This map lists candidate evidence only. Human review is required before certification use.",
     markdownTable([
       "Which control it supports",
       "Candidate evidence",

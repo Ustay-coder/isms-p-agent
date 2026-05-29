@@ -1,7 +1,11 @@
 import type { ControlAnalysisResult } from "../schemas/analysis.js";
 import { markdownList, sourceRefList } from "./markdown.js";
 
-export function renderControlGapReport(analyses: ControlAnalysisResult[]): string {
+export interface ReportRenderOptions {
+  public?: boolean;
+}
+
+export function renderControlGapReport(analyses: ControlAnalysisResult[], options: ReportRenderOptions = {}): string {
   const sorted = [...analyses].sort(compareControlResults);
   const sections = sorted.map((result) => [
     `## ${result.control_id} ${result.title}`,
@@ -17,16 +21,19 @@ export function renderControlGapReport(analyses: ControlAnalysisResult[]): strin
     markdownList(result.missing, "No missing items identified."),
     "**Recommended actions:**",
     markdownList(result.recommended_actions, "No recommended actions generated."),
+    requirementStatusSection(result),
     evidenceReviewSection(result),
     "**Required candidate evidence:**",
     markdownList(result.required_evidence, "No required evidence recorded."),
     "**Source refs:**",
-    sourceRefList(result.source_refs)
+    options.public ? "Private source details omitted from public report." : sourceRefList(result.source_refs)
   ].filter((line) => line !== undefined).join("\n\n"));
 
   return [
     "# Control Gap Report",
-    "This report uses conservative analyzer judgments. All evidence labels refer to candidate evidence that requires human review before certification use.",
+    options.public
+      ? "Public-safe report. Private paths, source excerpts, connector payloads, and review rationale are omitted."
+      : "This report uses conservative analyzer judgments. All evidence labels refer to candidate evidence that requires human review before certification use.",
     ...sections
   ].join("\n\n") + "\n";
 }
@@ -51,6 +58,21 @@ function evidenceReviewSection(result: ControlAnalysisResult): string | undefine
       const expires = review.expires_at ? `; expires ${review.expires_at}` : "";
       const title = review.title ? ` (${review.title})` : "";
       return `${review.requirement_id}: ${review.decision}${reviewer} for ${review.evidence_id}${title}${expires} - ${review.rationale}`;
+    }))
+  ].join("\n\n");
+}
+
+function requirementStatusSection(result: ControlAnalysisResult): string | undefined {
+  if (!result.requirement_evaluations || result.requirement_evaluations.length === 0) {
+    return undefined;
+  }
+
+  return [
+    "**Requirement status:**",
+    markdownList(result.requirement_evaluations.map((requirement) => {
+      const evidence = requirement.evidence_ids.length > 0 ? `; evidence ${requirement.evidence_ids.join(", ")}` : "";
+      const optional = requirement.required ? "" : "; optional";
+      return `${requirement.requirement_id}: ${requirement.status}${optional}${evidence} - ${requirement.next_action}`;
     }))
   ].join("\n\n");
 }

@@ -19,6 +19,18 @@ export interface SourceRef {
   excerpt?: string;
 }
 
+export interface ControlRequirement {
+  requirement_id: string;
+  control_id: string;
+  title: string;
+  kind: "policy" | "configuration" | "operation_record" | "implementation" | "log" | "applicability";
+  required: boolean;
+  evidence_types: string[];
+  review_frequency?: "per_change" | "monthly" | "quarterly" | "semiannual" | "annual";
+  freshness_days?: number;
+  source_refs: SourceRef[];
+}
+
 export interface ControlKnowledge {
   control_id: string;
   title: string;
@@ -34,5 +46,6 @@ export interface ControlKnowledge {
   automation_potential: AutomationPotential;
   human_review_required: boolean;
   source_refs: SourceRef[];
+  requirements?: ControlRequirement[];
   pack?: ControlPackMetadata;
 }
