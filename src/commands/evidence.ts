@@ -172,7 +172,7 @@ export async function reviewCloudflareEvidence(
   }
 
   const evidence = await loadEvidenceIndex(workspaceRoot);
-  const acceptedReviewKeys = await latestAcceptedReviewKeys(workspaceRoot);
+  const latestReviews = await latestReviewByKey(workspaceRoot);
   const records: EvidenceReviewRecord[] = [];
   const skipped: Array<{ evidence_id: string; reason: string }> = [];
   const preview: CloudflareEvidenceReviewPreview[] = [];
@@ -197,10 +197,18 @@ export async function reviewCloudflareEvidence(
 
     for (const requirementId of item.supports) {
       const reviewKey = `${item.evidence_id}\0${requirementId}`;
-      if (acceptedReviewKeys.has(reviewKey)) {
+      const latestReview = latestReviews.get(reviewKey);
+      if (latestReview?.decision === "accepted") {
         skipped.push({
           evidence_id: item.evidence_id,
           reason: `existing accepted review decision for ${requirementId}`
+        });
+        continue;
+      }
+      if (latestReview && latestReview.decision === decision && latestReview.rationale.trim() === rationale.trim()) {
+        skipped.push({
+          evidence_id: item.evidence_id,
+          reason: `existing unchanged ${decision} review decision for ${requirementId}`
         });
         continue;
       }
@@ -363,7 +371,7 @@ function cloudflareReviewSkipReason(item: EvidenceItem): string | undefined {
   return undefined;
 }
 
-async function latestAcceptedReviewKeys(workspaceRoot: string): Promise<Set<string>> {
+async function latestReviewByKey(workspaceRoot: string): Promise<Map<string, EvidenceReviewRecord>> {
   const latestByKey = new Map<string, EvidenceReviewRecord>();
   for (const review of await loadEvidenceReviews(workspaceRoot)) {
     const key = `${review.evidence_id}\0${review.requirement_id}`;
@@ -372,10 +380,7 @@ async function latestAcceptedReviewKeys(workspaceRoot: string): Promise<Set<stri
       latestByKey.set(key, review);
     }
   }
-
-  return new Set([...latestByKey.entries()]
-    .filter(([, review]) => review.decision === "accepted")
-    .map(([key]) => key));
+  return latestByKey;
 }
 
 export async function loadEvidenceIndex(workspaceRoot: string): Promise<EvidenceItem[]> {
