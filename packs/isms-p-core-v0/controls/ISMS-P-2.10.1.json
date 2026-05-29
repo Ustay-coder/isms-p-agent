@@ -59,11 +59,6 @@
       "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
       "sha256": "openkb-managed",
       "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
-    },
-    {
-      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안시스템_운영.md",
-      "sha256": "openkb-managed",
-      "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
     }
   ],
   "pack": {
@@ -93,7 +88,7 @@
           "excerpt": "EV-ISMS-P-2.10.1-001, EV-ISMS-P-2.10.1-002, EV-ISMS-P-2.10.1-003, EV-ISMS-P-2.10.1-004"
         },
         {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안시스템_운영.md",
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
           "sha256": "openkb-managed",
           "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
         }
@@ -118,7 +113,7 @@
           "excerpt": "EV-ISMS-P-2.10.1-001, EV-ISMS-P-2.10.1-002, EV-ISMS-P-2.10.1-003, EV-ISMS-P-2.10.1-004"
         },
         {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안시스템_운영.md",
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
           "sha256": "openkb-managed",
           "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
         }
@@ -143,7 +138,7 @@
           "excerpt": "EV-ISMS-P-2.10.1-001, EV-ISMS-P-2.10.1-002, EV-ISMS-P-2.10.1-003, EV-ISMS-P-2.10.1-004"
         },
         {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안시스템_운영.md",
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
           "sha256": "openkb-managed",
           "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
         }

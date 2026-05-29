@@ -52,6 +52,11 @@ test("active pack controls have analyzer-useful fields", async () => {
 
 test("active pack controls have requirement-level evidence mappings", async () => {
   const controls = await loadPackControls();
+  const sourceManifest = JSON.parse(await readFile(join(PACK_ROOT, "sources", "source-manifest.json"), "utf8")) as {
+    openkbSources: string[];
+  };
+  const manifestSources = new Set(sourceManifest.openkbSources);
+
   for (const control of controls.filter((item) => item.pack?.effective_status === "active")) {
     assert.ok((control.requirements?.length ?? 0) >= 2, `${control.control_id} should have at least two evidence requirements`);
     for (const requirement of control.requirements ?? []) {
@@ -65,6 +70,13 @@ test("active pack controls have requirement-level evidence mappings", async () =
         false,
         `${requirement.requirement_id} must not cite raw legal direct refs`
       );
+      for (const sourceRef of requirement.source_refs.filter((ref) => ref.sourcePath.startsWith("wiki/"))) {
+        assert.equal(
+          manifestSources.has(sourceRef.sourcePath),
+          true,
+          `${requirement.requirement_id} wiki source_ref must be declared in source-manifest.json`
+        );
+      }
     }
   }
 });
@@ -81,6 +93,13 @@ test("deleted access review control is modeled as residual risk", async () => {
 
 test("pack source references use compiled OpenKB claims as direct sources", async () => {
   const controls = await loadPackControls();
+  const sourceManifest = JSON.parse(await readFile(join(PACK_ROOT, "sources", "source-manifest.json"), "utf8")) as {
+    openkbSources: string[];
+    sourceProfileReferences?: Array<{ path: string; purpose: string }>;
+    knownSourceProfileConflicts?: Array<{ packControlId: string; rawLegalControlId: string }>;
+  };
+  const manifestSources = new Set(sourceManifest.openkbSources);
+
   for (const control of controls) {
     assert.equal(
       control.source_refs.some((sourceRef) => sourceRef.sourcePath === "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl"),
@@ -92,13 +111,14 @@ test("pack source references use compiled OpenKB claims as direct sources", asyn
       true,
       `${control.control_id} must cite compiled OpenKB sources`
     );
+    for (const sourceRef of control.source_refs.filter((ref) => ref.sourcePath.startsWith("wiki/"))) {
+      assert.equal(
+        manifestSources.has(sourceRef.sourcePath),
+        true,
+        `${control.control_id} wiki source_ref must be declared in source-manifest.json`
+      );
+    }
   }
-
-  const sourceManifest = JSON.parse(await readFile(join(PACK_ROOT, "sources", "source-manifest.json"), "utf8")) as {
-    openkbSources: string[];
-    sourceProfileReferences?: Array<{ path: string; purpose: string }>;
-    knownSourceProfileConflicts?: Array<{ packControlId: string; rawLegalControlId: string }>;
-  };
 
   assert.equal(sourceManifest.openkbSources.includes("raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl"), false);
   assert.deepEqual(sourceManifest.sourceProfileReferences, [
