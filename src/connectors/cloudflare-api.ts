@@ -70,7 +70,7 @@ function buildEndpoint(path: string, search: Record<string, string | number | bo
     throw new Error(`Cloudflare API path must start with a single slash: ${path}`);
   }
 
-  const endpoint = new URL(path, CLOUDFLARE_API_BASE);
+  const endpoint = new URL(`${CLOUDFLARE_API_BASE}${path}`);
   for (const [key, value] of Object.entries(search)) {
     endpoint.searchParams.set(key, String(value));
   }
