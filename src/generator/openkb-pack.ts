@@ -107,7 +107,7 @@ function buildControl(input: {
   wikiPath?: string;
   openkbRoot: string;
 }): ControlKnowledge {
-  const effectiveStatus = mapEffectiveStatus(input.annex.status);
+  const effectiveStatus = mapEffectiveStatus(input.claim?.effective_status ?? input.annex.status);
   const evidenceTitles = input.evidence.map((row) => row.title);
   const wikiSourcePath = input.wikiPath ? normalizeOpenKbPath(input.openkbRoot, input.wikiPath) : undefined;
 

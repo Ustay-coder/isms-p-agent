@@ -37,7 +37,7 @@
     "creating a normal remediation gap from a deleted control",
     "losing the historical mapping and confusing users who search for access review"
   ],
-  "automation_potential": "none",
+  "automation_potential": "partial",
   "human_review_required": true,
   "source_refs": [
     {
@@ -49,6 +49,16 @@
       "sourcePath": "compiled/citations/source_claims.jsonl",
       "sha256": "openkb-managed",
       "excerpt": "CLM-2.5.6"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.5.6-001"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.6_접근권한_검토.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.6 접근권한 검토"
     }
   ],
   "pack": {
@@ -56,7 +66,8 @@
     "source_of_truth": "openkb",
     "openkb_control_id": "ISMS-P-2.5.6",
     "effective_status": "deleted_residual_risk",
-    "review_status": "needs_human_review",
+    "review_status": "reviewed",
     "source_confidence": "ocr_derived"
-  }
+  },
+  "requirements": []
 }

@@ -1,16 +1,21 @@
 {
   "schemaVersion": 1,
   "name": "isms-p-core-v0",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "sourceOfTruth": "openkb",
   "sourceRootKind": "openkb-relative",
-  "controlCount": 3,
+  "controlCount": 8,
   "controls": [
+    "ISMS-P-2.1.1",
+    "ISMS-P-2.2.4",
+    "ISMS-P-2.3.1",
     "ISMS-P-2.5.3",
     "ISMS-P-2.5.6",
+    "ISMS-P-2.9.4",
+    "ISMS-P-2.10.1",
     "ISMS-P-2.10.2"
   ],
-  "reviewStatus": "needs_human_review",
+  "reviewStatus": "reviewed",
   "sourceConfidence": "ocr_derived",
   "publicSafety": {
     "containsPrivateServicePaths": false,

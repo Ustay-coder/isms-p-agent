@@ -10,9 +10,14 @@ test("isms-p-core-v0 pack has the expected OpenKB controls", async () => {
   const names = (await readdir(join(PACK_ROOT, "controls"))).filter((name) => name.endsWith(".json")).sort();
 
   assert.deepEqual(names, [
+    "ISMS-P-2.1.1.json",
+    "ISMS-P-2.10.1.json",
     "ISMS-P-2.10.2.json",
+    "ISMS-P-2.2.4.json",
+    "ISMS-P-2.3.1.json",
     "ISMS-P-2.5.3.json",
-    "ISMS-P-2.5.6.json"
+    "ISMS-P-2.5.6.json",
+    "ISMS-P-2.9.4.json"
   ]);
 
   const controls = await Promise.all(names.map(async (name) => {
@@ -20,9 +25,14 @@ test("isms-p-core-v0 pack has the expected OpenKB controls", async () => {
   }));
 
   assert.deepEqual(controls.map((control) => control.control_id).sort(), [
+    "ISMS-P-2.1.1",
+    "ISMS-P-2.10.1",
     "ISMS-P-2.10.2",
+    "ISMS-P-2.2.4",
+    "ISMS-P-2.3.1",
     "ISMS-P-2.5.3",
-    "ISMS-P-2.5.6"
+    "ISMS-P-2.5.6",
+    "ISMS-P-2.9.4"
   ]);
   assert.equal(controls.every((control) => control.pack?.source_of_truth === "openkb"), true);
 });
@@ -31,12 +41,31 @@ test("active pack controls have analyzer-useful fields", async () => {
   const controls = await loadPackControls();
   const active = controls.filter((control) => control.pack?.effective_status === "active");
 
-  assert.equal(active.length, 2);
+  assert.equal(active.length, 6);
   for (const control of active) {
     assert.ok(control.observable_signals.length >= 5, `${control.control_id} observable_signals`);
     assert.ok(control.required_operating_practices.length >= 3, `${control.control_id} operating practices`);
     assert.ok(control.required_evidence.length >= 3, `${control.control_id} required evidence`);
     assert.ok(control.common_defects.length >= 3, `${control.control_id} common defects`);
+  }
+});
+
+test("active pack controls have requirement-level evidence mappings", async () => {
+  const controls = await loadPackControls();
+  for (const control of controls.filter((item) => item.pack?.effective_status === "active")) {
+    assert.ok((control.requirements?.length ?? 0) >= 2, `${control.control_id} should have at least two evidence requirements`);
+    for (const requirement of control.requirements ?? []) {
+      assert.equal(requirement.control_id, control.control_id);
+      assert.match(requirement.requirement_id, new RegExp(`^${control.control_id}\\.`));
+      assert.ok(requirement.title.length > 0, `${requirement.requirement_id} must have title`);
+      assert.ok(requirement.evidence_types.length > 0, `${requirement.requirement_id} must list evidence_types`);
+      assert.ok(requirement.source_refs.length > 0, `${requirement.requirement_id} must cite source_refs`);
+      assert.equal(
+        requirement.source_refs.some((sourceRef) => sourceRef.sourcePath.startsWith("raw/legal/")),
+        false,
+        `${requirement.requirement_id} must not cite raw legal direct refs`
+      );
+    }
   }
 });
 
@@ -100,9 +129,14 @@ test("public pack files avoid private absolute paths and credential-looking valu
   const files = [
     "pack.json",
     "sources/source-manifest.json",
+    "controls/ISMS-P-2.1.1.json",
+    "controls/ISMS-P-2.10.1.json",
+    "controls/ISMS-P-2.10.2.json",
+    "controls/ISMS-P-2.2.4.json",
+    "controls/ISMS-P-2.3.1.json",
     "controls/ISMS-P-2.5.3.json",
     "controls/ISMS-P-2.5.6.json",
-    "controls/ISMS-P-2.10.2.json"
+    "controls/ISMS-P-2.9.4.json"
   ];
 
   for (const file of files) {
@@ -110,6 +144,7 @@ test("public pack files avoid private absolute paths and credential-looking valu
     assert.doesNotMatch(content, /\/Users\//);
     assert.doesNotMatch(content, /apps\/evaluation/);
     assert.doesNotMatch(content, /overlays\/evaluate-club/);
+    assert.doesNotMatch(content, /evaluate\.club/);
     assert.doesNotMatch(content, /evaluate\.club asset map/);
     assert.doesNotMatch(content, /["']?\b(?:api[_-]?key|token|secret)\b["']?\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{12,}/i);
     assert.doesNotMatch(content, /"value"\s*:\s*"[^"]*(?:api[_-]?key|token|secret)[^"]*"/i);
