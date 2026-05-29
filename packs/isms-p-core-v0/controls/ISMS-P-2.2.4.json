@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.2.4",
+  "title": "인식제고 및 교육훈련",
+  "domain": "보호대책 요구사항",
+  "category": "인적 보안",
+  "requirement": "인식제고 및 교육훈련: 인식제고 및 교육훈련 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-2.2.4 인식제고 및 교육훈련 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 인식제고 및 교육훈련?",
+    "Is there an owner for reviewing 인식제고 및 교육훈련 evidence?"
+  ],
+  "observable_signals": [
+    "인식제고 및 교육훈련",
+    "인식제고 및 교육훈련 정책·절차 문서",
+    "인식제고 및 교육훈련 운영 이행 기록",
+    "인식제고 및 교육훈련 정기 검토 및 개선 기록",
+    "인력 보안 서약·교육·퇴직 처리 기록",
+    "policy",
+    "record",
+    "review_record",
+    "hr_record"
+  ],
+  "required_operating_practices": [
+    "인식제고 및 교육훈련 policy ownership and review cycle",
+    "인식제고 및 교육훈련 evidence review",
+    "인식제고 및 교육훈련 exception approval"
+  ],
+  "required_evidence": [
+    "인식제고 및 교육훈련 정책·절차 문서",
+    "인식제고 및 교육훈련 운영 이행 기록",
+    "인식제고 및 교육훈련 정기 검토 및 개선 기록",
+    "인력 보안 서약·교육·퇴직 처리 기록"
+  ],
+  "common_defects": [
+    "인식제고 및 교육훈련 evidence exists but has no owner",
+    "인식제고 및 교육훈련 settings are captured once but not reviewed",
+    "인식제고 및 교육훈련 exceptions are handled informally"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.2.4 인식제고 및 교육훈련 status 삭제"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.2.4"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.2.4-001, EV-ISMS-P-2.2.4-002, EV-ISMS-P-2.2.4-003, EV-ISMS-P-2.2.4-004"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.4_인식제고_및_교육훈련.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.2.4 인식제고 및 교육훈련"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.2.4",
+    "effective_status": "active",
+    "review_status": "reviewed",
+    "source_confidence": "ocr_derived"
+  },
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.2.4.security-training-plan",
+      "control_id": "ISMS-P-2.2.4",
+      "title": "Security awareness and training plan defines scope, cadence, and owner",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy_document",
+        "procedure_document"
+      ],
+      "review_frequency": "annual",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.2.4-001, EV-ISMS-P-2.2.4-002, EV-ISMS-P-2.2.4-003, EV-ISMS-P-2.2.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.4_인식제고_및_교육훈련.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.2.4 인식제고 및 교육훈련"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.2.4.training-completion-record",
+      "control_id": "ISMS-P-2.2.4",
+      "title": "Training completion records identify participants, date, and topic",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "access_review_record",
+        "test_result"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.2.4-001, EV-ISMS-P-2.2.4-002, EV-ISMS-P-2.2.4-003, EV-ISMS-P-2.2.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.4_인식제고_및_교육훈련.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.2.4 인식제고 및 교육훈련"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.2.4.missing-participant-followup",
+      "control_id": "ISMS-P-2.2.4",
+      "title": "Missing participant follow-up records track exceptions to closure",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "change_approval_record",
+        "applicability_note"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.2.4-001, EV-ISMS-P-2.2.4-002, EV-ISMS-P-2.2.4-003, EV-ISMS-P-2.2.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.4_인식제고_및_교육훈련.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.2.4 인식제고 및 교육훈련"
+        }
+      ]
+    }
+  ]
+}

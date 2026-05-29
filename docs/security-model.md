@@ -26,6 +26,8 @@ Scanner output is not evidence acceptance. `isms-agent evidence index` turns sca
 
 `isms-agent evidence review-cloudflare` is a local-only bulk review overlay for Cloudflare scanner evidence. It reads `evidence/index.jsonl`, writes append-only records to `reviews/evidence-review.jsonl`, and does not call Cloudflare APIs. Bulk Cloudflare review may write `needs_followup` or explicit `rejected` decisions, but it must not write `accepted`; accepted decisions require a separate manual review of operating evidence.
 
+Accepted Cloudflare operating evidence must come from manual private-record review, not from scanner output alone. The templates under `docs/evidence-templates/cloudflare/` define the accepted criteria, private storage location, and public export rule for Cloudflare access review, change approval, and security review evidence before a human owner records an accepted decision.
+
 The default workspace keeps real evidence local:
 
 - `evidence/private/` for real evidence files,
@@ -34,6 +36,10 @@ The default workspace keeps real evidence local:
 - `reports/` for private reports.
 
 These paths are ignored by default. Public artifacts should be produced through `isms-agent report --public`, `isms-agent evidence export-public`, and `isms-agent evidence validate --public`.
+
+## Dogfood Note: 2026-05-29
+
+Small-batch control expansion keeps real evidence local. The public repository includes curated control knowledge and public-safe documentation, while `evidence/private/`, `reviews/`, `scans/`, and `reports/` remain local workspace state unless a public-safe export command creates redacted output.
 
 ## No Customer Or Personal Data Collection
 

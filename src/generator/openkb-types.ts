@@ -13,6 +13,7 @@ export interface SourceClaimRow {
   claim_id: string;
   control_id: string;
   control_name: string;
+  effective_status?: "유지" | "삭제" | string;
   confidence: "ocr_derived" | "official_verified" | "human_curated" | string;
   review_status: "needs_human_review" | "reviewed" | string;
   source_path: string;

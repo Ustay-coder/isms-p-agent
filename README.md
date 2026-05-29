@@ -26,7 +26,8 @@ flowchart TD
   B --> C["wiki/ source indexes"]
   B --> D["controls/*.json"]
   Q["packs/isms-p-core-v0"] --> R["pack validate"]
-  R --> D
+  R --> X["pack install"]
+  X --> D
   E["project/ operating documents"] --> F["scan --local"]
   G["local repository metadata"] --> F
   H["GitHub, Vercel, Cloudflare metadata"] --> I["read-only connector scans"]
@@ -132,6 +133,8 @@ isms-agent evidence validate --public
 
 `review-cloudflare` is a bulk overlay for Cloudflare scanner output. It marks configuration snapshots as `needs_followup` by default and writes one private review record per supported requirement. Bulk review can record only `needs_followup` or an explicit `rejected` decision for Cloudflare scanner output; it cannot create `accepted` decisions. Use `isms-agent evidence review <evidence-id>` only after a human owner confirms operating evidence such as an access review, change approval, or dated cloud security review.
 
+Accepted Cloudflare evidence is a manual operating-evidence decision. Before recording `--decision accepted`, use the private templates in [docs/evidence-templates/cloudflare/](docs/evidence-templates/cloudflare/) to confirm accepted criteria, private storage, and public export rules. Scanner output alone is not enough to accept ISMS-P-2.10.2 operating evidence.
+
 See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and evaluation service dry-run flow.
 
 ## Natural-Language Questions with Agents
@@ -204,16 +207,22 @@ isms-agent pack validate packs/isms-p-core-v0
 
 The validator rejects public-pack safety problems such as private overlay paths, raw legal profile rows used as direct `source_refs`, mismatched `pack.json` control lists, missing compiled OpenKB references, and deleted controls that are not modeled as human-reviewed residual risk.
 
-Until `isms-agent pack install` exists, copy the controls into a workspace manually:
+Install a curated pack into a workspace before generating reports:
 
 ```bash
-mkdir -p /path/to/workspace/controls
-cp -n packs/isms-p-core-v0/controls/*.json /path/to/workspace/controls/
-cd /path/to/workspace
-isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs
+isms-agent pack install packs/isms-p-core-v0
+isms-agent scan --local
+isms-agent evidence index
 isms-agent report
-isms-agent ask-context "ISMS-P-2.10.2 클라우드 보안에서 부족한 증적은?"
 ```
+
+Use `--overwrite` only when you intentionally want curated pack controls to replace local workspace controls:
+
+```bash
+isms-agent pack install packs/isms-p-core-v0 --overwrite
+```
+
+`pack install` validates the pack first, then copies public control JSON files into `controls/`. `installedControls` means controls that are now present and up to date after the install, including pre-existing files that already matched the pack. `skippedControls` means existing local files were preserved because they differ from the pack and `--overwrite` was not requested.
 
 If files already exist, review them before replacing local workspace controls.
 

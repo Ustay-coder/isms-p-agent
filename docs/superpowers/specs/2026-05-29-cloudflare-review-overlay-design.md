@@ -172,6 +172,18 @@ Dry run must not write files. It should show:
 - whether the evidence is eligible,
 - skip reason when not eligible.
 
+### 6.2.1 Rerun Idempotency
+
+Bulk review is append-only for state changes, but rerunning the same decision and rationale must not append duplicate records.
+
+For each `evidence_id` and `requirement_id` pair:
+
+- if the latest review is `accepted`, bulk review skips the pair,
+- if the latest review has the same non-accepted decision and same rationale, bulk review skips the pair,
+- if the decision or rationale changes, bulk review appends a new record.
+
+This keeps dogfood runs repeatable while preserving review history when a reviewer intentionally changes state.
+
 ### 6.3 Decision Guardrails
 
 The command should reject:

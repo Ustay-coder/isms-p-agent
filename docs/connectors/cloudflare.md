@@ -114,6 +114,10 @@ isms-agent evidence validate --public
 
 Review the generated warnings. Warnings about missing human review decisions are acceptable in dry-run mode, but they must be resolved before treating the evidence as certification-ready.
 
+## Dogfood Note: 2026-05-29
+
+The evaluation-service dry run confirmed that Cloudflare scanner evidence remains candidate evidence. Bulk review records `needs_followup` by default, reruns skip unchanged latest decisions, and public validation/report generation do not expose private review rationale.
+
 ## Official References
 
 - Cloudflare API token permissions: https://developers.cloudflare.com/fundamentals/api/reference/permissions/

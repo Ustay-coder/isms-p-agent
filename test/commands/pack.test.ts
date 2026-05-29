@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { stringifyJson } from "../../src/core/json.js";
-import { validatePack } from "../../src/commands/pack.js";
+import { installPack, validatePack } from "../../src/commands/pack.js";
 import type { ControlKnowledge } from "../../src/schemas/control.js";
 
 test("validatePack accepts the checked-in core v0 pack", async () => {
@@ -13,7 +13,79 @@ test("validatePack accepts the checked-in core v0 pack", async () => {
 
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
-  assert.equal(result.checkedControls, 3);
+  assert.equal(result.checkedControls, 8);
+});
+
+test("installPack copies validated pack controls into a workspace without overwriting by default", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-install-"));
+  try {
+    const packRoot = join(process.cwd(), "packs", "isms-p-core-v0");
+    const result = await installPack(dir, {
+      packRoot,
+      overwrite: false
+    });
+
+    assert.equal(result.installedControls, 8);
+    assert.deepEqual(result.skippedControls, []);
+    assert.equal(result.outputDir, join(dir, "controls"));
+
+    const installed = JSON.parse(await readFile(join(dir, "controls", "ISMS-P-2.10.2.json"), "utf8"));
+    assert.equal(installed.control_id, "ISMS-P-2.10.2");
+
+    await writeFile(join(dir, "controls", "ISMS-P-2.10.2.json"), "{\"local\":true}\n");
+    const second = await installPack(dir, { packRoot, overwrite: false });
+    assert.equal(second.installedControls, 7);
+    assert.deepEqual(second.skippedControls, ["ISMS-P-2.10.2.json"]);
+
+    const preserved = await readFile(join(dir, "controls", "ISMS-P-2.10.2.json"), "utf8");
+    assert.equal(preserved, "{\"local\":true}\n");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("installPack resolves relative pack roots from the workspace root", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-install-relative-"));
+  try {
+    const packRoot = join(dir, "packs", "isms-p-core-v0");
+    await writeMinimalPack(packRoot, [control()]);
+
+    const result = await installPack(dir, {
+      packRoot: "packs/isms-p-core-v0",
+      overwrite: false
+    });
+
+    assert.equal(result.packRoot, packRoot);
+    assert.equal(result.installedControls, 1);
+    assert.deepEqual(result.skippedControls, []);
+    assert.equal(result.outputDir, join(dir, "controls"));
+
+    const installed = JSON.parse(await readFile(join(dir, "controls", "ISMS-P-2.5.3.json"), "utf8"));
+    assert.equal(installed.control_id, "ISMS-P-2.5.3");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("installPack overwrites differing local controls when requested", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-install-overwrite-"));
+  try {
+    const packRoot = join(process.cwd(), "packs", "isms-p-core-v0");
+    await installPack(dir, { packRoot, overwrite: false });
+
+    const localPath = join(dir, "controls", "ISMS-P-2.10.2.json");
+    await writeFile(localPath, "{\"local\":true}\n");
+    const result = await installPack(dir, { packRoot, overwrite: true });
+
+    assert.equal(result.installedControls, 8);
+    assert.deepEqual(result.skippedControls, []);
+
+    const replaced = JSON.parse(await readFile(localPath, "utf8"));
+    assert.equal(replaced.control_id, "ISMS-P-2.10.2");
+    assert.equal(replaced.local, undefined);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("validatePack rejects raw legal direct refs and private overlay paths", async () => {
@@ -91,7 +163,52 @@ test("CLI validates the default checked-in pack", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /valid/);
-  assert.match(result.stdout, /checkedControls.*3/);
+  assert.match(result.stdout, /checkedControls.*8/);
+});
+
+test("CLI installs a selected pack into workspace controls", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-install-cli-"));
+  try {
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "pack",
+      "install",
+      join(process.cwd(), "packs", "isms-p-core-v0")
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.installedControls, 8);
+    assert.deepEqual(parsed.skippedControls, []);
+    assert.equal(
+      await readdir(join(dir, "controls")).then((names) => names.filter((name) => name.endsWith(".json")).length),
+      8
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("CLI installs the default pack from the repository workspace", () => {
+  const result = spawnSync(process.execPath, [
+    join(process.cwd(), "dist", "cli.js"),
+    "pack",
+    "install"
+  ], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, "");
+
+  const parsed = JSON.parse(result.stdout);
+  assert.equal(parsed.packRoot, join(process.cwd(), "packs", "isms-p-core-v0"));
+  assert.equal(parsed.outputDir, join(process.cwd(), "controls"));
+  assert.equal(parsed.installedControls + parsed.skippedControls.length, 8);
 });
 
 async function writeMinimalPack(packRoot: string, controls: ControlKnowledge[]): Promise<void> {

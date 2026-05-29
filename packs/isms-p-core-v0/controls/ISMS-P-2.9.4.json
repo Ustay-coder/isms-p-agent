@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.9.4",
+  "title": "로그 및 접속 기록 관리",
+  "domain": "보호대책 요구사항",
+  "category": "시스템 및 서비스 운영관리",
+  "requirement": "로그 및 접속 기록 관리: 로그 및 접속 기록 관리 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-2.9.4 로그 및 접속 기록 관리 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 로그 및 접속 기록 관리?",
+    "Is there an owner for reviewing 로그 및 접속 기록 관리 evidence?"
+  ],
+  "observable_signals": [
+    "로그 및 접속 기록 관리",
+    "로그 및 접속 기록 관리 정책·절차 문서",
+    "로그 및 접속 기록 관리 운영 이행 기록",
+    "로그 및 접속 기록 관리 정기 검토 및 개선 기록",
+    "운영 변경·백업·로그 관리 기록",
+    "감사로그 수집·보관·조회 설정",
+    "policy",
+    "record",
+    "review_record",
+    "operations_record",
+    "log"
+  ],
+  "required_operating_practices": [
+    "로그 및 접속 기록 관리 policy ownership and review cycle",
+    "로그 및 접속 기록 관리 evidence review",
+    "로그 및 접속 기록 관리 exception approval"
+  ],
+  "required_evidence": [
+    "로그 및 접속 기록 관리 정책·절차 문서",
+    "로그 및 접속 기록 관리 운영 이행 기록",
+    "로그 및 접속 기록 관리 정기 검토 및 개선 기록",
+    "운영 변경·백업·로그 관리 기록",
+    "감사로그 수집·보관·조회 설정"
+  ],
+  "common_defects": [
+    "로그 및 접속 기록 관리 evidence exists but has no owner",
+    "로그 및 접속 기록 관리 settings are captured once but not reviewed",
+    "로그 및 접속 기록 관리 exceptions are handled informally"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.9.4 로그 및 접속 기록 관리 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.9.4"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.9.4-001, EV-ISMS-P-2.9.4-002, EV-ISMS-P-2.9.4-003, EV-ISMS-P-2.9.4-004, EV-ISMS-P-2.9.4-005"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.4_로그_및_접속_기록_관리.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.9.4 로그 및 접속 기록 관리"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.9.4",
+    "effective_status": "active",
+    "review_status": "reviewed",
+    "source_confidence": "ocr_derived"
+  },
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.9.4.log-retention-policy",
+      "control_id": "ISMS-P-2.9.4",
+      "title": "Log retention policy defines target logs, retention period, and owner",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy_document",
+        "procedure_document"
+      ],
+      "review_frequency": "annual",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.9.4-001, EV-ISMS-P-2.9.4-002, EV-ISMS-P-2.9.4-003, EV-ISMS-P-2.9.4-004, EV-ISMS-P-2.9.4-005"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.4_로그_및_접속_기록_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.9.4 로그 및 접속 기록 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.9.4.log-collection-configuration",
+      "control_id": "ISMS-P-2.9.4",
+      "title": "Log collection configuration evidence covers important systems and access records",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "configuration_export",
+        "connector_snapshot",
+        "audit_log"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.9.4-001, EV-ISMS-P-2.9.4-002, EV-ISMS-P-2.9.4-003, EV-ISMS-P-2.9.4-004, EV-ISMS-P-2.9.4-005"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.4_로그_및_접속_기록_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.9.4 로그 및 접속 기록 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.9.4.log-review-record",
+      "control_id": "ISMS-P-2.9.4",
+      "title": "Log review records show periodic review, anomalies, and follow-up",
+      "kind": "log",
+      "required": true,
+      "evidence_types": [
+        "audit_log",
+        "access_review_record"
+      ],
+      "review_frequency": "monthly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.9.4-001, EV-ISMS-P-2.9.4-002, EV-ISMS-P-2.9.4-003, EV-ISMS-P-2.9.4-004, EV-ISMS-P-2.9.4-005"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.4_로그_및_접속_기록_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.9.4 로그 및 접속 기록 관리"
+        }
+      ]
+    }
+  ]
+}

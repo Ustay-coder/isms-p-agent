@@ -87,6 +87,65 @@ test("OpenKB fixture wiki pages exist for generated controls", async () => {
   assert.match(deletedWiki, /삭제 상태/);
 });
 
+test("generatePackFromOpenKb uses source claim effective_status when annex status is deleted", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-effective-status-"));
+  try {
+    const openkbRoot = join(dir, "openkb");
+    const packRoot = join(dir, "pack");
+    await writeMinimalOpenKb(openkbRoot, {
+      controlId: "ISMS-P-2.2.4",
+      controlName: "인식제고 및 교육훈련",
+      annexStatus: "삭제",
+      effectiveStatus: "유지",
+      wikiFileName: "ISMS-P-2.2.4_인식제고_및_교육훈련.md"
+    });
+
+    await generatePackFromOpenKb({
+      openkbRoot,
+      packRoot,
+      packName: "generated-pack",
+      version: "0.2.0",
+      controlIds: ["ISMS-P-2.2.4"]
+    });
+
+    const generated = JSON.parse(await readFile(join(packRoot, "controls", "ISMS-P-2.2.4.json"), "utf8"));
+    assert.equal(generated.control_id, "ISMS-P-2.2.4");
+    assert.equal(generated.title, "인식제고 및 교육훈련");
+    assert.equal(generated.pack.effective_status, "active");
+    assert.equal(generated.pack.review_status, "needs_human_review");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("generatePackFromOpenKb validates annex status even when source claim effective_status exists", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-effective-status-"));
+  try {
+    const openkbRoot = join(dir, "openkb");
+    const packRoot = join(dir, "pack");
+    await writeMinimalOpenKb(openkbRoot, {
+      controlId: "ISMS-P-2.2.4",
+      controlName: "인식제고 및 교육훈련",
+      annexStatus: "미확인",
+      effectiveStatus: "유지",
+      wikiFileName: "ISMS-P-2.2.4_인식제고_및_교육훈련.md"
+    });
+
+    await assert.rejects(
+      generatePackFromOpenKb({
+        openkbRoot,
+        packRoot,
+        packName: "generated-pack",
+        version: "0.2.0",
+        controlIds: ["ISMS-P-2.2.4"]
+      }),
+      /Unsupported OpenKB control status: 미확인/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("generatePackFromOpenKb writes active and deleted residual-risk controls", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-"));
   try {
@@ -317,7 +376,14 @@ test("generatePackFromOpenKb rejects merged controls until merge metadata is sup
 
 async function writeMinimalOpenKb(
   openkbRoot: string,
-  options: { controlId: string; controlName: string; mergedInto?: string; wikiFileName: string }
+  options: {
+    controlId: string;
+    controlName: string;
+    annexStatus?: "유지" | "삭제" | string;
+    effectiveStatus?: "유지" | "삭제" | string;
+    mergedInto?: string;
+    wikiFileName: string;
+  }
 ): Promise<void> {
   await mkdir(join(openkbRoot, "compiled", "controls"), { recursive: true });
   await mkdir(join(openkbRoot, "compiled", "citations"), { recursive: true });
@@ -331,7 +397,7 @@ async function writeMinimalOpenKb(
       control_name: options.controlName,
       part: "보호대책 요구사항",
       domain_id: "2.5",
-      status: "유지",
+      status: options.annexStatus ?? "유지",
       simplified_control_id: options.controlId,
       merged_into: options.mergedInto ?? null,
       source_pages: [1]
@@ -343,6 +409,7 @@ async function writeMinimalOpenKb(
       claim_id: "CLM-test",
       control_id: options.controlId,
       control_name: options.controlName,
+      effective_status: options.effectiveStatus ?? options.annexStatus ?? "유지",
       confidence: "ocr_derived",
       review_status: "needs_human_review",
       source_path: "raw/official/test.jsonl",

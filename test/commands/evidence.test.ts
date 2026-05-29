@@ -325,6 +325,73 @@ test("reviewCloudflareEvidence appends needs_followup records that satisfy publi
   }
 });
 
+test("reviewCloudflareEvidence skips unchanged latest non-accepted decisions on rerun", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-idempotent-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 2).map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    const first = await reviewCloudflareEvidence(dir, {
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T01:00:00.000Z")
+    });
+    assert.equal(first.reviewRecords, 3);
+
+    const second = await reviewCloudflareEvidence(dir, {
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T02:00:00.000Z")
+    });
+
+    assert.equal(second.outputPath, undefined);
+    assert.equal(second.reviewedEvidence, 0);
+    assert.equal(second.reviewRecords, 0);
+    assert.equal(second.skippedEvidence, 3);
+    assert.deepEqual(second.skipped.map((item) => item.reason), [
+      "existing unchanged needs_followup review decision for ISMS-P-2.10.2.cloudflare-config-export",
+      "existing unchanged needs_followup review decision for ISMS-P-2.10.2.cloudflare-config-export",
+      "existing unchanged needs_followup review decision for ISMS-P-2.10.2.cloud-change-approval"
+    ]);
+
+    const rows = (await readFile(join(dir, "reviews", "evidence-review.jsonl"), "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    assert.equal(rows.length, 3);
+    assert.deepEqual(rows.map((row) => row.reviewed_at), [
+      "2026-05-29T01:00:00.000Z",
+      "2026-05-29T01:00:00.000Z",
+      "2026-05-29T01:00:00.000Z"
+    ]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("reviewCloudflareEvidence appends when latest non-accepted decision changes", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-state-change-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), cloudflareEvidenceRows().slice(0, 1).map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    await reviewCloudflareEvidence(dir, {
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T01:00:00.000Z")
+    });
+
+    const changed = await reviewCloudflareEvidence(dir, {
+      decision: "rejected",
+      rationale: "This Cloudflare signal is not in the certification scope.",
+      reviewer: "security-owner",
+      reviewedAt: new Date("2026-05-29T02:00:00.000Z")
+    });
+
+    assert.equal(changed.reviewRecords, 1);
+    assert.equal(changed.records[0]?.decision, "rejected");
+
+    const rows = (await readFile(join(dir, "reviews", "evidence-review.jsonl"), "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(rows.map((row) => row.decision), ["needs_followup", "rejected"]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("reviewCloudflareEvidence rejects accepted decisions and requires rationale for rejected decisions", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-cloudflare-guardrail-"));
   try {

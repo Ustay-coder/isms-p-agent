@@ -53,6 +53,16 @@
       "sourcePath": "compiled/citations/source_claims.jsonl",
       "sha256": "openkb-managed",
       "excerpt": "CLM-2.5.3"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.5.3-001, EV-ISMS-P-2.5.3-002"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.3 사용자 인증"
     }
   ],
   "pack": {
@@ -60,7 +70,81 @@
     "source_of_truth": "openkb",
     "openkb_control_id": "ISMS-P-2.5.3",
     "effective_status": "active",
-    "review_status": "needs_human_review",
+    "review_status": "reviewed",
     "source_confidence": "ocr_derived"
-  }
+  },
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.5.3.authentication-policy",
+      "control_id": "ISMS-P-2.5.3",
+      "title": "Authentication policy defines safe authentication procedures and owners",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy_document",
+        "procedure_document"
+      ],
+      "review_frequency": "annual",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.3-001, EV-ISMS-P-2.5.3-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.3 사용자 인증"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.3.authentication-configuration",
+      "control_id": "ISMS-P-2.5.3",
+      "title": "Authentication configuration evidence covers MFA, session, and failure controls",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "configuration_export",
+        "connector_snapshot"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.3-001, EV-ISMS-P-2.5.3-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.3 사용자 인증"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.3.authentication-review-record",
+      "control_id": "ISMS-P-2.5.3",
+      "title": "Authentication review records show periodic control review and follow-up",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "access_review_record",
+        "audit_log"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.3-001, EV-ISMS-P-2.5.3-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.3 사용자 인증"
+        }
+      ]
+    }
+  ]
 }

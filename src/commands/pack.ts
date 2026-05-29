@@ -1,4 +1,5 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { constants } from "node:fs";
+import { copyFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 import { generatePackFromOpenKb } from "../generator/openkb-pack.js";
 import type { GeneratePackResult } from "../generator/openkb-types.js";
@@ -28,6 +29,18 @@ export interface PackGenerateCliOptions {
   packRoot: string;
   controlIds: string[];
   version: string;
+}
+
+export interface PackInstallOptions {
+  packRoot: string;
+  overwrite?: boolean;
+}
+
+export interface PackInstallResult {
+  packRoot: string;
+  outputDir: string;
+  installedControls: number;
+  skippedControls: string[];
 }
 
 export function parsePackGenerateArgs(args: string[]): PackGenerateCliOptions | undefined {
@@ -75,6 +88,45 @@ export async function generatePack(options: PackGenerateCliOptions): Promise<Gen
     version: options.version,
     controlIds: options.controlIds
   });
+}
+
+export async function installPack(workspaceRoot: string, options: PackInstallOptions): Promise<PackInstallResult> {
+  const packRoot = resolve(workspaceRoot, options.packRoot);
+  const validation = await validatePack(packRoot);
+  if (!validation.valid) {
+    throw new Error(`Pack is invalid and cannot be installed: ${validation.issues.join("; ")}`);
+  }
+
+  const controlsRoot = join(packRoot, "controls");
+  const outputDir = join(workspaceRoot, "controls");
+  await mkdir(outputDir, { recursive: true });
+
+  const skippedControls: string[] = [];
+  let installedControls = 0;
+  for (const name of await jsonControlFileNames(controlsRoot)) {
+    const source = join(controlsRoot, name);
+    const destination = join(outputDir, name);
+    try {
+      await copyFile(source, destination, options.overwrite ? 0 : constants.COPYFILE_EXCL);
+      installedControls += 1;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        const [sourceContent, destinationContent] = await Promise.all([
+          readFile(source, "utf8"),
+          readFile(destination, "utf8")
+        ]);
+        if (sourceContent === destinationContent) {
+          installedControls += 1;
+        } else {
+          skippedControls.push(name);
+        }
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  return { packRoot, outputDir, installedControls, skippedControls };
 }
 
 interface PackManifest {
@@ -253,7 +305,7 @@ async function readControls(
     throw error;
   }
 
-  const controlFiles = (await readdir(controlsRoot)).filter((name) => name.endsWith(".json")).sort();
+  const controlFiles = await jsonControlFileNames(controlsRoot);
   if (controlFiles.length === 0) {
     issues.push("controls/ has no JSON control files");
     return [];
@@ -275,4 +327,10 @@ async function readControls(
   }
 
   return controls;
+}
+
+async function jsonControlFileNames(directory: string): Promise<string[]> {
+  return (await readdir(directory))
+    .filter((name) => name.endsWith(".json"))
+    .sort((left, right) => left.localeCompare(right, "en"));
 }
