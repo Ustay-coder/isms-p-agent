@@ -177,6 +177,45 @@ test("indexEvidenceFromScan preserves existing non-scan evidence items", async (
   }
 });
 
+test("indexEvidenceFromScan keeps only safe Cloudflare connector metadata", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-index-cloudflare-"));
+  try {
+    await mkdir(join(dir, "scans"), { recursive: true });
+    const scanPath = join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json");
+    await writeFile(scanPath, stringifyJson(scanResult({
+      signals: [
+        {
+          id: "cloudflare:hyperdrive",
+          source: "cloudflare",
+          basis: "observed",
+          summary: "Cloudflare Hyperdrive metadata shows 1 config(s).",
+          paths: [],
+          metadata: {
+            product: "hyperdrive",
+            endpoint: "/accounts/{account_id}/hyperdrive/configs",
+            permission_status: "available",
+            requirement_ids: ["ISMS-P-2.10.2.cloudflare-config-export"],
+            available: true,
+            count: 1,
+            sensitivity: "internal"
+          }
+        }
+      ]
+    })));
+
+    const result = await indexEvidenceFromScan(dir, { fromScan: scanPath });
+    const rows = (await readFile(result.outputPath, "utf8")).trim().split("\n").map((line) => JSON.parse(line) as EvidenceItem);
+    const indexed = rows.find((row) => row.evidence_id === "ev_scan_cloudflare_cloudflare_hyperdrive");
+
+    assert.equal(indexed?.metadata.product, "hyperdrive");
+    assert.equal(indexed?.metadata.count, 1);
+    assert.equal(indexed?.classification, "confidential");
+    assert.doesNotMatch(JSON.stringify(indexed), /private-db|password|bucket|route|account_123/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("reviewEvidence appends a human review record for an indexed evidence item", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-review-"));
   try {
