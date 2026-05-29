@@ -132,6 +132,8 @@ isms-agent report --public
 isms-agent evidence validate --public
 ```
 
+See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and evaluation service dry-run flow.
+
 ## Natural-Language Questions with Agents
 
 The CLI does not need a separate LLM API key for natural-language answers. Instead, it exposes a grounded context bundle that Codex, Claude Code, or another local coding agent can read and turn into an answer.
