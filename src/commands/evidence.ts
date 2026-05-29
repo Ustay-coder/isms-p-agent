@@ -402,9 +402,35 @@ function evidenceFromSignal(signal: ScanSignal, collectedAt: string): EvidenceIt
       signal_id: signal.id,
       signal_source: signal.source,
       signal_basis: signal.basis,
-      path_count: signal.paths.length
+      path_count: signal.paths.length,
+      ...safeSignalMetadata(signal.metadata)
     }
   };
+}
+
+function safeSignalMetadata(metadata: ScanSignal["metadata"]): Record<string, string | number | boolean | string[]> {
+  const safe: Record<string, string | number | boolean | string[]> = {};
+  for (const key of ["product", "permission_status", "snapshot_id", "sensitivity", "count", "available", "requirement_ids"] as const) {
+    const value = metadata[key];
+    if (isSafeMetadataValue(value)) {
+      safe[key] = value;
+    }
+  }
+
+  const endpoint = metadata.endpoint;
+  if (typeof endpoint === "string" && isTemplatedEndpoint(endpoint)) {
+    safe.endpoint = endpoint;
+  }
+
+  return safe;
+}
+
+function isSafeMetadataValue(value: string | number | boolean | string[] | undefined): value is string | number | boolean | string[] {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean" || Array.isArray(value);
+}
+
+function isTemplatedEndpoint(value: string): boolean {
+  return value.startsWith("/") && !/\/accounts\/[^/{]/.test(value) && !/\/zones\/[^/{]/.test(value);
 }
 
 function scanEvidenceId(signal: ScanSignal): string {
