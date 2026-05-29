@@ -8,11 +8,15 @@ GitHub, Vercel, and Cloudflare connectors must be read-only. They may collect me
 
 Connector failures must be reported as uncertainty. A failed API call, missing token, missing permission, or unavailable endpoint should produce `needs_confirmation` scanner signals rather than a satisfied control judgment.
 
+Cloudflare account scans may record product availability, counts, endpoint categories, permission status, and requirement IDs. They must not store account IDs, token values, Worker script names or code, Worker secret values, R2 bucket names or object keys, Hyperdrive database hosts, database names, database users, passwords, DNS content values, route hostnames, API operation paths, logs, request payloads, or user/admin identities.
+
 ## No Secret Storage
 
 The tool must not store API tokens, secret values, private keys, session secrets, database URLs, bearer tokens, or environment variable values in scan outputs, reports, logs, or generated wiki files.
 
 Scanners may record secret names or presence metadata when useful for readiness analysis, but secret values must be omitted or redacted.
+
+Cloudflare API tokens must be supplied through `CLOUDFLARE_API_TOKEN`. The token is used only in the `Authorization` header and must never be written to scan JSON, evidence JSONL, reports, provenance logs, command output, or public exports.
 
 ## Private Evidence Boundary
 

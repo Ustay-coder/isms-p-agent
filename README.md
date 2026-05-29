@@ -72,6 +72,11 @@ isms-agent ingest raw/example.md
 isms-agent scan --local
 isms-agent scan --local --target project/evaluation
 isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs --exclude __tests__
+isms-agent scan --cloudflare example.com
+isms-agent scan \
+  --cloudflare example.com \
+  --cloudflare-account account_123 \
+  --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
 isms-agent evidence index
 isms-agent evidence review ev_scan_local_docs_auth_mfa \
   --requirement ISMS-P-2.5.3.admin-mfa \
@@ -99,6 +104,33 @@ reviews/      human review overlays for evidence and applicability
 ```
 
 Use `--target <path>` when the workspace contains multiple services or copied repositories. Local scanner paths remain relative to the ISMS-P workspace root, but file discovery is limited to the target directory. Use `--include` and `--exclude` with comma-separated, target-relative paths to narrow the scan to source, specs, or operating documents. The scanner also skips common dependency, build, report, planning/cache, and agent-runtime directories such as `node_modules`, `.next`, `.open-next`, `.planning`, `.claude`, `.playwright-mcp`, `scans`, and `reports`.
+
+Cloudflare scans require `CLOUDFLARE_API_TOKEN` and are read-only. Zone-only scans keep the legacy shape:
+
+```bash
+CLOUDFLARE_API_TOKEN=... isms-agent scan --cloudflare example.com
+```
+
+Account product scans are opt-in:
+
+```bash
+CLOUDFLARE_API_TOKEN=... isms-agent scan \
+  --cloudflare example.com \
+  --cloudflare-account account_123 \
+  --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
+```
+
+Cloudflare connector output is candidate metadata, not accepted audit evidence. It records product availability, counts, permission status, and requirement mappings only. Continue through the evidence review flow before using it in readiness decisions:
+
+```bash
+isms-agent evidence index
+isms-agent evidence review ev_scan_cloudflare_cloudflare_hyperdrive \
+  --requirement ISMS-P-2.10.2.cloudflare-config-export \
+  --decision needs_followup \
+  --rationale "Cloud owner must confirm the exported configuration snapshot."
+isms-agent report --public
+isms-agent evidence validate --public
+```
 
 ## Natural-Language Questions with Agents
 
