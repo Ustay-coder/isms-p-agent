@@ -1,5 +1,5 @@
 import { CloudflareApiClient, type CloudflareApiResult } from "./cloudflare-api.js";
-import { isAccountCloudflareProduct, normalizeCloudflareProducts, type CloudflareProduct } from "./cloudflare-products.js";
+import { normalizeCloudflareProducts, type CloudflareProduct } from "./cloudflare-products.js";
 import { CLOUDFLARE_REQUIREMENTS, cloudflareNeedsConfirmation, cloudflareObserved, permissionMetadata } from "./cloudflare-safety.js";
 import type { ScanSignal } from "../schemas/scan.js";
 
@@ -25,27 +25,24 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
 
   const client = new CloudflareApiClient(input.token, fetchImpl);
   const zoneInput = input.zone.trim();
-  const zoneResult = await findZone(client, zoneInput);
-  if (!zoneResult.result.ok) {
-    return [apiUncertainty("cloudflare:zone", "zone", "zone metadata", "/zones", zoneResult.result.status)];
-  }
-  if (!zoneResult.zoneId) {
-    return [
-      cloudflareNeedsConfirmation("cloudflare:zone", "Cloudflare zone was not observed.", {
-        product: "zone",
-        endpoint: "/zones",
-        permission_status: "not_observed",
-        requirement_ids: [CLOUDFLARE_REQUIREMENTS.configExport],
-        available: false,
-        exists: false
-      })
-    ];
-  }
-
   const products = normalizeCloudflareProducts(input.products);
   const signals: ScanSignal[] = [];
+  let zoneId: string | undefined;
+  let zoneStatus: string | undefined;
 
-  if (products.includes("zone")) {
+  if (products.some(isZoneDependentProduct)) {
+    const zoneResult = await findZone(client, zoneInput);
+    if (!zoneResult.result.ok) {
+      signals.push(...zoneUnavailableSignals(products, zoneResult.result.status));
+    } else if (!zoneResult.zoneId) {
+      signals.push(...zoneNotObservedSignals(products));
+    } else {
+      zoneId = zoneResult.zoneId;
+      zoneStatus = zoneResult.status;
+    }
+  }
+
+  if (zoneId && products.includes("zone")) {
     signals.push(cloudflareObserved("cloudflare:zone", "Cloudflare zone metadata is available.", {
       product: "zone",
       endpoint: "/zones",
@@ -53,10 +50,12 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
       requirement_ids: [CLOUDFLARE_REQUIREMENTS.configExport],
       available: true,
       exists: true,
-      status: zoneResult.status ?? "unknown"
+      status: zoneStatus ?? "unknown"
     }));
+  }
 
-    const ssl = await client.get(`/zones/${encodeURIComponent(zoneResult.zoneId)}/settings/ssl`);
+  if (zoneId && products.includes("zone")) {
+    const ssl = await client.get(`/zones/${encodeURIComponent(zoneId)}/settings/ssl`);
     if (ssl.ok) {
       const tlsMode = stringValue(asRecord(asRecord(ssl.body).result).value) ?? "unknown";
       signals.push(cloudflareObserved("cloudflare:tls-mode", `Cloudflare TLS/SSL mode is ${tlsMode}.`, {
@@ -72,8 +71,8 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
     }
   }
 
-  if (products.includes("waf")) {
-    const waf = await client.list(`/zones/${encodeURIComponent(zoneResult.zoneId)}/rulesets`);
+  if (zoneId && products.includes("waf")) {
+    const waf = await client.list(`/zones/${encodeURIComponent(zoneId)}/rulesets`);
     if (waf.ok) {
       const available = waf.items.length > 0;
       signals.push(cloudflareObserved("cloudflare:waf", available ? "Cloudflare WAF/ruleset metadata is available." : "Cloudflare WAF/ruleset metadata was not observed.", {
@@ -90,8 +89,8 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
     }
   }
 
-  if (products.includes("access")) {
-    const access = await client.list(`/zones/${encodeURIComponent(zoneResult.zoneId)}/access/apps`);
+  if (zoneId && products.includes("access")) {
+    const access = await client.list(`/zones/${encodeURIComponent(zoneId)}/access/apps`);
     if (access.ok) {
       signals.push(cloudflareObserved("cloudflare:access-apps", `Cloudflare Access metadata shows ${access.items.length} application(s).`, {
         product: "access",
@@ -107,8 +106,8 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
     }
   }
 
-  if (products.includes("dns")) {
-    const dns = await client.list(`/zones/${encodeURIComponent(zoneResult.zoneId)}/dns_records`);
+  if (zoneId && products.includes("dns")) {
+    const dns = await client.list(`/zones/${encodeURIComponent(zoneId)}/dns_records`);
     if (dns.ok) {
       const counts = new Map<string, number>();
       for (const record of dns.items) {
@@ -132,8 +131,12 @@ export async function scanCloudflare(input: CloudflareInput, fetchImpl: typeof f
     }
   }
 
-  for (const product of products.filter(isAccountCloudflareProduct)) {
-    signals.push(...await scanAccountProduct(client, product, input.accountId, zoneResult.zoneId));
+  if (zoneId && products.includes("api-gateway")) {
+    signals.push(await scanApiGateway(client, zoneId));
+  }
+
+  for (const product of products.filter(isAccountIndependentProduct)) {
+    signals.push(...await scanAccountProduct(client, product, input.accountId, zoneId));
   }
 
   return signals;
@@ -143,7 +146,7 @@ async function scanAccountProduct(
   client: CloudflareApiClient,
   product: CloudflareProduct,
   accountId: string | undefined,
-  zoneId: string
+  zoneId: string | undefined
 ): Promise<ScanSignal[]> {
   if (!accountId) {
     return [cloudflareNeedsConfirmation(`cloudflare:${product}`, `Cloudflare ${product} scan requires --cloudflare-account.`, {
@@ -165,6 +168,15 @@ async function scanAccountProduct(
     return [await scanHyperdrive(client, accountId)];
   }
   if (product === "api-gateway") {
+    if (!zoneId) {
+      return [cloudflareNeedsConfirmation("cloudflare:api-gateway", "Cloudflare api-gateway metadata requires zone confirmation.", {
+        product: "api-gateway",
+        endpoint: "/zones/{zone_id}/api_gateway/discovery/operations",
+        permission_status: "zone_unavailable",
+        requirement_ids: requirementIdsForProduct("api-gateway"),
+        available: false
+      })];
+    }
     return [await scanApiGateway(client, zoneId)];
   }
   return [];
@@ -259,12 +271,83 @@ function apiUncertainty(id: string, product: string, label: string, endpoint: st
   });
 }
 
+function zoneUnavailableSignals(products: CloudflareProduct[], status: number): ScanSignal[] {
+  return products.filter(isZoneDependentProduct).map((product) => {
+    if (product === "zone") {
+      return apiUncertainty("cloudflare:zone", "zone", "zone metadata", "/zones", status);
+    }
+    return cloudflareNeedsConfirmation(productSignalId(product), `Cloudflare ${product} metadata requires zone confirmation.`, {
+      product,
+      endpoint: endpointForProduct(product),
+      permission_status: "zone_unavailable",
+      requirement_ids: requirementIdsForProduct(product),
+      available: false
+    });
+  });
+}
+
+function zoneNotObservedSignals(products: CloudflareProduct[]): ScanSignal[] {
+  return products.filter(isZoneDependentProduct).map((product) => {
+    if (product === "zone") {
+      return cloudflareNeedsConfirmation("cloudflare:zone", "Cloudflare zone was not observed.", {
+        product: "zone",
+        endpoint: "/zones",
+        permission_status: "not_observed",
+        requirement_ids: [CLOUDFLARE_REQUIREMENTS.configExport],
+        available: false,
+        exists: false
+      });
+    }
+    return cloudflareNeedsConfirmation(productSignalId(product), `Cloudflare ${product} metadata requires an observed zone.`, {
+      product,
+      endpoint: endpointForProduct(product),
+      permission_status: "zone_unavailable",
+      requirement_ids: requirementIdsForProduct(product),
+      available: false
+    });
+  });
+}
+
 function accountProductFailure(product: CloudflareProduct, endpoint: string, status: number): ScanSignal {
   const statusText = status === 0 ? "network error" : `${status}`;
   return cloudflareNeedsConfirmation(`cloudflare:${product}`, `Cloudflare API returned ${statusText} while checking ${product} metadata.`, {
     ...permissionMetadata(product, endpoint, requirementIdsForProduct(product)),
     available: false
   });
+}
+
+function isZoneDependentProduct(product: CloudflareProduct): boolean {
+  return product === "zone" || product === "waf" || product === "access" || product === "dns" || product === "api-gateway";
+}
+
+function isAccountIndependentProduct(product: CloudflareProduct): boolean {
+  return product === "workers" || product === "r2" || product === "hyperdrive";
+}
+
+function productSignalId(product: CloudflareProduct): string {
+  if (product === "access") {
+    return "cloudflare:access-apps";
+  }
+  if (product === "dns") {
+    return "cloudflare:dns-records";
+  }
+  return `cloudflare:${product}`;
+}
+
+function endpointForProduct(product: CloudflareProduct): string {
+  if (product === "waf") {
+    return "/zones/{zone_id}/rulesets";
+  }
+  if (product === "access") {
+    return "/zones/{zone_id}/access/apps";
+  }
+  if (product === "dns") {
+    return "/zones/{zone_id}/dns_records";
+  }
+  if (product === "api-gateway") {
+    return "/zones/{zone_id}/api_gateway/discovery/operations";
+  }
+  return "/zones";
 }
 
 function requirementIdsForProduct(product: string): string[] {

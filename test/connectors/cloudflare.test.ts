@@ -209,6 +209,63 @@ test("scanCloudflare converts account product 403 responses into needs_confirmat
   assert.equal(signals.find((signal) => signal.id === "cloudflare:hyperdrive")?.basis, "needs_confirmation");
 });
 
+test("scanCloudflare scans account-independent products even when zone lookup fails", async () => {
+  const fetchMock = async (url: string | URL | Request): Promise<Response> => {
+    const parsed = new URL(String(url));
+    if (parsed.pathname === "/client/v4/zones") {
+      return jsonResponse({ success: false, errors: [{ message: "forbidden" }] }, 403);
+    }
+    if (parsed.pathname === "/client/v4/accounts/account_123/workers/scripts") {
+      return jsonResponse({ success: true, result: [{ id: "private-worker-name" }] });
+    }
+    if (parsed.pathname === "/client/v4/accounts/account_123/r2/buckets") {
+      return jsonResponse({ success: true, result: { buckets: [{ name: "private-bucket-name" }] } });
+    }
+    if (parsed.pathname === "/client/v4/accounts/account_123/hyperdrive/configs") {
+      return jsonResponse({ success: true, result: [{ name: "private-hyperdrive-name", origin: { host: "private-db.example.internal" } }] });
+    }
+    return jsonResponse({ success: false, errors: [{ message: "not found" }] }, 404);
+  };
+
+  const signals = await scanCloudflare({
+    zone: "example.com",
+    accountId: "account_123",
+    products: ["zone", "workers", "r2", "hyperdrive", "api-gateway"],
+    token: TOKEN
+  }, fetchMock);
+  const serialized = JSON.stringify(signals);
+
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:zone")?.basis, "needs_confirmation");
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:workers")?.metadata.count, 1);
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:r2")?.metadata.count, 1);
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:hyperdrive")?.metadata.count, 1);
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:api-gateway")?.basis, "needs_confirmation");
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:api-gateway")?.metadata.permission_status, "zone_unavailable");
+  assert.doesNotMatch(serialized, /private-worker-name|private-bucket-name|private-hyperdrive-name|private-db/);
+});
+
+test("scanCloudflare skips zone lookup for account-independent product scans", async () => {
+  const calls: string[] = [];
+  const fetchMock = async (url: string | URL | Request): Promise<Response> => {
+    const parsed = new URL(String(url));
+    calls.push(parsed.pathname);
+    if (parsed.pathname === "/client/v4/accounts/account_123/workers/scripts") {
+      return jsonResponse({ success: true, result: [{ id: "private-worker-name" }] });
+    }
+    return jsonResponse({ success: false, errors: [{ message: "unexpected endpoint" }] }, 500);
+  };
+
+  const signals = await scanCloudflare({
+    zone: "example.com",
+    accountId: "account_123",
+    products: ["workers"],
+    token: TOKEN
+  }, fetchMock);
+
+  assert.equal(signals.find((signal) => signal.id === "cloudflare:workers")?.metadata.count, 1);
+  assert.deepEqual(calls, ["/client/v4/accounts/account_123/workers/scripts"]);
+});
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
