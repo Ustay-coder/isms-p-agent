@@ -860,6 +860,19 @@ test("addManualEvidence requires an existing private evidence path", async () =>
       privateEvidencePath: "../outside.md",
       summary: "Authentication policy reviewed for 2026 Q4."
     }), /Manual evidence private path must be inside the workspace/);
+
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "review.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "review");
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q5",
+      title: "Authentication policy 2026 Q5",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: privatePath,
+      summary: "Authentication policy reviewed for 2026 Q5."
+    }), /Manual evidence private path must be workspace-relative/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -892,6 +905,28 @@ test("addManualEvidence rejects unsafe classifications and metadata", async () =
       summary: "Metadata includes unsafe key.",
       metadata: { token: "redacted-token-placeholder" }
     }), /Manual evidence metadata contains credential-like metadata at token/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_private_path_metadata_key",
+      title: "Private path metadata key",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe private path key.",
+      metadata: { private_evidence_path: "redacted" }
+    }), /Manual evidence metadata contains reserved private metadata at private_evidence_path/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_private_path_metadata_value",
+      title: "Private path metadata value",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe private path value.",
+      metadata: { source: "evidence/private/ISMS-P-2.5.3/review.md" }
+    }), /Manual evidence metadata contains private path metadata at source/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

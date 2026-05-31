@@ -31,6 +31,17 @@ const EVIDENCE_TYPES = new Set<EvidenceType>([
   "applicability_note"
 ]);
 const MANUAL_EVIDENCE_ID_PATTERN = /^ev_[a-z0-9][a-z0-9_]{1,94}$/;
+const RESERVED_MANUAL_METADATA_KEYS = new Set([
+  "private_evidence_path",
+  "privateEvidencePath",
+  "private_path",
+  "privatePath",
+  "path",
+  "file",
+  "file_name",
+  "fileName",
+  "filename"
+]);
 
 export interface EvidenceValidateOptions {
   public?: boolean;
@@ -663,6 +674,21 @@ function validateManualMetadata(metadata: Record<string, string>): void {
   if (credentialPath) {
     throw new Error(`Manual evidence metadata contains credential-like metadata at ${credentialPath}.`);
   }
+  for (const [key, value] of Object.entries(metadata)) {
+    if (RESERVED_MANUAL_METADATA_KEYS.has(key)) {
+      throw new Error(`Manual evidence metadata contains reserved private metadata at ${key}.`);
+    }
+    if (isPrivateEvidencePathMetadata(value)) {
+      throw new Error(`Manual evidence metadata contains private path metadata at ${key}.`);
+    }
+  }
+}
+
+function isPrivateEvidencePathMetadata(value: string): boolean {
+  const normalized = value.replaceAll("\\", "/");
+  return normalized === "evidence/private"
+    || normalized.includes("/evidence/private/")
+    || normalized.startsWith("evidence/private/");
 }
 
 async function hashEvidencePath(path: string): Promise<string> {
@@ -754,6 +780,9 @@ async function resolvePrivateEvidenceReference(workspaceRoot: string, inputPath:
 }
 
 async function resolvePrivateEvidencePath(workspaceRoot: string, inputPath: string, label: string): Promise<string> {
+  if (isAbsolute(inputPath)) {
+    throw new Error(`${label} must be workspace-relative: ${inputPath}`);
+  }
   const resolved = resolveWorkspacePath(workspaceRoot, inputPath, label);
   const relativePath = relative(resolve(workspaceRoot), resolved).replaceAll("\\", "/");
   if (!isPrivateEvidenceRelativePath(relativePath)) {
