@@ -1188,6 +1188,60 @@ test("CLI supports evidence validate --public", async () => {
   }
 });
 
+test("CLI supports evidence add without storing private evidence paths", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cli-add-"));
+  try {
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "authentication-policy", "2026-Q2.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "# Authentication policy\n\nReviewed for 2026 Q2.\n");
+
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "evidence",
+      "add",
+      "--id",
+      "ev_manual_auth_policy_cli_2026_q2",
+      "--title",
+      "Authentication policy 2026 Q2",
+      "--type",
+      "policy_document",
+      "--classification",
+      "internal",
+      "--supports",
+      "ISMS-P-2.5.3.authentication-policy,ISMS-P-2.5.3.admin-mfa",
+      "--supports",
+      "ISMS-P-2.5.3.password-policy",
+      "--private-evidence",
+      "evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md",
+      "--summary",
+      "Authentication policy reviewed for 2026 Q2.",
+      "--metadata",
+      "owner=security"
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.item.evidence_id, "ev_manual_auth_policy_cli_2026_q2");
+    assert.equal(parsed.item.metadata.owner, "security");
+    assert.equal(parsed.item.metadata.private_evidence_present, true);
+    assert.deepEqual(parsed.item.supports, [
+      "ISMS-P-2.5.3.admin-mfa",
+      "ISMS-P-2.5.3.authentication-policy",
+      "ISMS-P-2.5.3.password-policy"
+    ]);
+
+    const indexContent = await readFile(join(dir, "evidence", "index.jsonl"), "utf8");
+    assert.match(indexContent, /ev_manual_auth_policy_cli_2026_q2/);
+    assert.doesNotMatch(indexContent, /evidence\/private/);
+    assert.doesNotMatch(indexContent, /2026-Q2\.md/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("CLI supports evidence index, review, and export-public", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cli-flow-"));
   try {

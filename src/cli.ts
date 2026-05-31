@@ -1,13 +1,32 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
 import { parseAskContextArgs, runAskContext } from "./commands/ask-context.js";
-import { CLOUDFLARE_BULK_ACCEPTED_ERROR, exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence } from "./commands/evidence.js";
+import { addManualEvidence, CLOUDFLARE_BULK_ACCEPTED_ERROR, exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence, type EvidenceAddOptions } from "./commands/evidence.js";
 import { initWorkspace } from "./commands/init.js";
 import { ingestSource } from "./commands/ingest.js";
 import { generatePack, installPack, parsePackGenerateArgs, validatePack } from "./commands/pack.js";
 import { generateReports } from "./commands/report.js";
 import { scanLocal, scanWorkspace, type ScanOptions } from "./commands/scan.js";
 import { parseCloudflareProducts } from "./connectors/cloudflare-products.js";
+
+const CLI_EVIDENCE_TYPES = new Set<EvidenceAddOptions["evidenceType"]>([
+  "policy_document",
+  "procedure_document",
+  "configuration_export",
+  "access_review_record",
+  "change_approval_record",
+  "audit_log",
+  "implementation_file",
+  "test_result",
+  "connector_snapshot",
+  "applicability_note"
+]);
+
+const CLI_EVIDENCE_ADD_CLASSIFICATIONS = new Set<EvidenceAddOptions["classification"]>([
+  "internal",
+  "confidential",
+  "public_sample"
+]);
 
 async function main(argv: string[]): Promise<void> {
   const command = argv[2];
@@ -41,6 +60,15 @@ async function main(argv: string[]): Promise<void> {
       console.log(result.outputPaths.backlog);
       console.log(result.outputPaths.controlGapReport);
       console.log(result.outputPaths.evidenceMap);
+      return;
+    }
+  }
+
+  if (command === "evidence" && args[0] === "add") {
+    const parsed = parseEvidenceAddArgs(args.slice(1));
+    if (parsed) {
+      const result = await addManualEvidence(process.cwd(), parsed);
+      console.log(JSON.stringify(result, null, 2));
       return;
     }
   }
@@ -135,6 +163,7 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: isms-agent ingest <raw-file>");
   console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id] [--cloudflare-account account-id] [--cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway]");
   console.error("Usage: isms-agent report [--public]");
+  console.error("Usage: isms-agent evidence add --id <id> --title <text> --type <type> --classification <internal|confidential|public_sample> --supports <ids> --private-evidence evidence/private/... --summary <text> [--valid-until <iso>] [--metadata key=value]");
   console.error("Usage: isms-agent evidence index [--from-scan scans/file.json]");
   console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>] [--private-evidence evidence/private/...]");
   console.error("Usage: isms-agent evidence review-cloudflare [--decision needs_followup|rejected] [--rationale <text>] [--reviewer <name>] [--dry-run]");
@@ -161,6 +190,101 @@ function parsePackInstallArgs(args: string[]): { packRoot: string; overwrite?: b
     return { packRoot: args[0], overwrite: true };
   }
   return undefined;
+}
+
+function parseEvidenceAddArgs(args: string[]): EvidenceAddOptions | undefined {
+  let id: string | undefined;
+  let title: string | undefined;
+  let evidenceType: EvidenceAddOptions["evidenceType"] | undefined;
+  let classification: EvidenceAddOptions["classification"] | undefined;
+  const supports: string[] = [];
+  let privateEvidencePath: string | undefined;
+  let summary: string | undefined;
+  let validUntil: string | undefined;
+  const metadata: Record<string, string> = {};
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const value = args[index + 1];
+    if (!value || value.startsWith("--")) {
+      return undefined;
+    }
+
+    if (arg === "--id") {
+      id = value;
+    } else if (arg === "--title") {
+      title = value;
+    } else if (arg === "--type") {
+      if (!isCliEvidenceType(value)) {
+        return undefined;
+      }
+      evidenceType = value;
+    } else if (arg === "--classification") {
+      if (!isCliEvidenceAddClassification(value)) {
+        return undefined;
+      }
+      classification = value;
+    } else if (arg === "--supports") {
+      const parsedSupports = parseCommaSeparatedValues(value);
+      if (parsedSupports.length === 0) {
+        return undefined;
+      }
+      supports.push(...parsedSupports);
+    } else if (arg === "--private-evidence") {
+      privateEvidencePath = value;
+    } else if (arg === "--summary") {
+      summary = value;
+    } else if (arg === "--valid-until") {
+      validUntil = value;
+    } else if (arg === "--metadata") {
+      const parsedMetadata = parseMetadataValue(value);
+      if (!parsedMetadata) {
+        return undefined;
+      }
+      metadata[parsedMetadata.key] = parsedMetadata.value;
+    } else {
+      return undefined;
+    }
+    index += 1;
+  }
+
+  if (!id || !title || !evidenceType || !classification || supports.length === 0 || !privateEvidencePath || !summary) {
+    return undefined;
+  }
+
+  return {
+    id,
+    title,
+    evidenceType,
+    classification,
+    supports,
+    privateEvidencePath,
+    summary,
+    ...(validUntil ? { validUntil } : {}),
+    ...(Object.keys(metadata).length > 0 ? { metadata } : {})
+  };
+}
+
+function parseCommaSeparatedValues(value: string): string[] {
+  return value.split(",").map((entry) => entry.trim()).filter(Boolean);
+}
+
+function parseMetadataValue(value: string): { key: string; value: string } | undefined {
+  const separatorIndex = value.indexOf("=");
+  if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
+    return undefined;
+  }
+  const key = value.slice(0, separatorIndex).trim();
+  const metadataValue = value.slice(separatorIndex + 1).trim();
+  return key && metadataValue ? { key, value: metadataValue } : undefined;
+}
+
+function isCliEvidenceType(value: string): value is EvidenceAddOptions["evidenceType"] {
+  return CLI_EVIDENCE_TYPES.has(value as EvidenceAddOptions["evidenceType"]);
+}
+
+function isCliEvidenceAddClassification(value: string): value is EvidenceAddOptions["classification"] {
+  return CLI_EVIDENCE_ADD_CLASSIFICATIONS.has(value as EvidenceAddOptions["classification"]);
 }
 
 function parseEvidenceIndexArgs(args: string[]): { fromScan?: string } | undefined {
