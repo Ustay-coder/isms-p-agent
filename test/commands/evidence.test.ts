@@ -64,6 +64,37 @@ test("validateEvidence rejects public evidence metadata that looks like a creden
   }
 });
 
+test("validateEvidence rejects public evidence metadata that contains private or local paths", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-private-path-metadata-"));
+  try {
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), [
+      JSON.stringify(evidence({
+        evidence_id: "ev_private_path_metadata",
+        metadata: {
+          note: "see evidence/private/ISMS-P-2.5.3/review.md"
+        }
+      })),
+      JSON.stringify(evidence({
+        evidence_id: "ev_local_path_metadata",
+        metadata: {
+          note: "source /Users/example/private/review.md"
+        }
+      }))
+    ].join("\n") + "\n");
+
+    const result = await validateEvidence(dir, { public: true });
+
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join("\n"), /ev_private_path_metadata/);
+    assert.match(result.issues.join("\n"), /private path metadata at note/);
+    assert.match(result.issues.join("\n"), /ev_local_path_metadata/);
+    assert.match(result.issues.join("\n"), /local path metadata at note/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("validateEvidence allows public-safe Cloudflare permission status metadata", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cloudflare-permission-"));
   try {
@@ -1128,6 +1159,28 @@ test("addManualEvidence rejects unsafe classifications and metadata", async () =
       summary: "Metadata includes unsafe private path value.",
       metadata: { source: "evidence/private/ISMS-P-2.5.3/review.md" }
     }), /Manual evidence metadata contains private path metadata at source/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_embedded_private_path_metadata_value",
+      title: "Embedded private path metadata value",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes embedded unsafe private path value.",
+      metadata: { note: "see evidence/private/ISMS-P-2.5.3/review.md" }
+    }), /Manual evidence metadata contains private path metadata at note/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_relative_private_path_metadata_value",
+      title: "Relative private path metadata value",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes relative unsafe private path value.",
+      metadata: { note: "  ./evidence/private/ISMS-P-2.5.3/review.md" }
+    }), /Manual evidence metadata contains private path metadata at note/);
 
     await assert.rejects(addManualEvidence(dir, {
       id: "ev_manual_absolute_path_metadata_value",

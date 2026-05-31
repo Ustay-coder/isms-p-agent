@@ -507,6 +507,14 @@ function validateEvidenceItem(
   if (credentialPath) {
     issues.push(`evidence ${item.evidence_id} contains credential-like metadata at ${credentialPath}.`);
   }
+  const privatePathMetadata = privatePathMetadataPath(item.metadata);
+  if (privatePathMetadata) {
+    issues.push(`evidence ${item.evidence_id} contains private path metadata at ${privatePathMetadata}.`);
+  }
+  const localPathMetadata = localPathMetadataPath(item.metadata);
+  if (localPathMetadata) {
+    issues.push(`evidence ${item.evidence_id} contains local path metadata at ${localPathMetadata}.`);
+  }
 }
 
 function cloudflareReviewSkipReason(item: EvidenceItem): string | undefined {
@@ -676,15 +684,17 @@ function validateManualMetadata(metadata: Record<string, string>): void {
   if (credentialPath) {
     throw new Error(`Manual evidence metadata contains credential-like metadata at ${credentialPath}.`);
   }
+  const privatePathMetadata = privatePathMetadataPath(metadata);
+  if (privatePathMetadata) {
+    throw new Error(`Manual evidence metadata contains private path metadata at ${privatePathMetadata}.`);
+  }
+  const localPathMetadata = localPathMetadataPath(metadata);
+  if (localPathMetadata) {
+    throw new Error(`Manual evidence metadata contains local path metadata at ${localPathMetadata}.`);
+  }
   for (const [key, value] of Object.entries(metadata)) {
     if (isReservedManualMetadataKey(key)) {
       throw new Error(`Manual evidence metadata contains reserved private metadata at ${key}.`);
-    }
-    if (isPrivateEvidencePathMetadata(value)) {
-      throw new Error(`Manual evidence metadata contains private path metadata at ${key}.`);
-    }
-    if (isLocalPathMetadata(value)) {
-      throw new Error(`Manual evidence metadata contains local path metadata at ${key}.`);
     }
   }
 }
@@ -694,10 +704,8 @@ function isReservedManualMetadataKey(key: string): boolean {
 }
 
 function isPrivateEvidencePathMetadata(value: string): boolean {
-  const normalized = value.replaceAll("\\", "/");
-  return normalized === "evidence/private"
-    || normalized.includes("/evidence/private/")
-    || normalized.startsWith("evidence/private/");
+  const normalized = value.trim().replaceAll("\\", "/").toLowerCase();
+  return /(^|[^a-z0-9_-])(?:\.\/|\/)?evidence\/private(?:\/|$)/.test(normalized);
 }
 
 function isLocalPathMetadata(value: string): boolean {
@@ -706,10 +714,29 @@ function isLocalPathMetadata(value: string): boolean {
     return false;
   }
   const normalized = trimmed.replaceAll("\\", "/");
-  return isAbsolute(trimmed)
-    || /^[A-Za-z]:\//.test(normalized)
+  return /^[A-Za-z]:\//.test(normalized)
     || /(?:^|[\s"'=:(])\/(?:Users|private|var)\//.test(normalized)
     || /(?:^|[\s"'=:(])[A-Za-z]:\//.test(normalized);
+}
+
+function privatePathMetadataPath(metadata: Record<string, string | number | boolean | string[]>): string | undefined {
+  for (const [key, value] of Object.entries(metadata)) {
+    const values = Array.isArray(value) ? value : [value];
+    if (values.some((entry) => typeof entry === "string" && isPrivateEvidencePathMetadata(entry))) {
+      return key;
+    }
+  }
+  return undefined;
+}
+
+function localPathMetadataPath(metadata: Record<string, string | number | boolean | string[]>): string | undefined {
+  for (const [key, value] of Object.entries(metadata)) {
+    const values = Array.isArray(value) ? value : [value];
+    if (values.some((entry) => typeof entry === "string" && isLocalPathMetadata(entry))) {
+      return key;
+    }
+  }
+  return undefined;
 }
 
 async function hashEvidencePath(path: string, workspaceRoot: string): Promise<string> {
