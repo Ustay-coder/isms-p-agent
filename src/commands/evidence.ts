@@ -681,6 +681,9 @@ function validateManualMetadata(metadata: Record<string, string>): void {
     if (isPrivateEvidencePathMetadata(value)) {
       throw new Error(`Manual evidence metadata contains private path metadata at ${key}.`);
     }
+    if (isLocalPathMetadata(value)) {
+      throw new Error(`Manual evidence metadata contains local path metadata at ${key}.`);
+    }
   }
 }
 
@@ -689,6 +692,18 @@ function isPrivateEvidencePathMetadata(value: string): boolean {
   return normalized === "evidence/private"
     || normalized.includes("/evidence/private/")
     || normalized.startsWith("evidence/private/");
+}
+
+function isLocalPathMetadata(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  const normalized = trimmed.replaceAll("\\", "/");
+  return isAbsolute(trimmed)
+    || /^[A-Za-z]:\//.test(normalized)
+    || /(?:^|[\s"'=:(])\/(?:Users|private|var)\//.test(normalized)
+    || /(?:^|[\s"'=:(])[A-Za-z]:\//.test(normalized);
 }
 
 async function hashEvidencePath(path: string): Promise<string> {

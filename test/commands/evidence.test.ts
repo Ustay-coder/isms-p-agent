@@ -927,6 +927,51 @@ test("addManualEvidence rejects unsafe classifications and metadata", async () =
       summary: "Metadata includes unsafe private path value.",
       metadata: { source: "evidence/private/ISMS-P-2.5.3/review.md" }
     }), /Manual evidence metadata contains private path metadata at source/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_absolute_path_metadata_value",
+      title: "Absolute path metadata value",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe absolute path value.",
+      metadata: { source: "/Users/example/private/review.md" }
+    }), /Manual evidence metadata contains local path metadata at source/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_private_absolute_path_metadata_value",
+      title: "Private absolute path metadata value",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe private absolute path value.",
+      metadata: { source: "/private/tmp/review.md" }
+    }), /Manual evidence metadata contains local path metadata at source/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_windows_path_metadata_value",
+      title: "Windows path metadata value",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe Windows path value.",
+      metadata: { source: "C:\\Users\\example\\review.md" }
+    }), /Manual evidence metadata contains local path metadata at source/);
+
+    const result = await addManualEvidence(dir, {
+      id: "ev_manual_safe_metadata",
+      title: "Safe metadata",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes safe scalar values.",
+      metadata: { owner: "security" }
+    });
+    assert.equal(result.item.metadata.owner, "security");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
