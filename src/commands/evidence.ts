@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { appendFile, lstat, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { EvidenceClassification, EvidenceItem, EvidenceReviewRecord, EvidenceType, ReviewDecision } from "../schemas/evidence.js";
@@ -32,15 +32,12 @@ const EVIDENCE_TYPES = new Set<EvidenceType>([
 ]);
 const MANUAL_EVIDENCE_ID_PATTERN = /^ev_[a-z0-9][a-z0-9_]{1,94}$/;
 const RESERVED_MANUAL_METADATA_KEYS = new Set([
-  "private_evidence_path",
-  "privateEvidencePath",
-  "private_path",
-  "privatePath",
+  "privateevidencepath",
+  "privatepath",
   "path",
   "file",
-  "file_name",
-  "fileName",
-  "filename"
+  "filename",
+  "privateevidencepresent"
 ]);
 
 export interface EvidenceValidateOptions {
@@ -149,7 +146,7 @@ export async function addManualEvidence(
     options.privateEvidencePath,
     "Manual evidence private path"
   );
-  const contentSha256 = await hashEvidencePath(resolve(workspaceRoot, privateEvidencePath));
+  const contentSha256 = await hashEvidencePath(resolve(workspaceRoot, privateEvidencePath), workspaceRoot);
   validateManualMetadata(options.metadata ?? {});
 
   const existingEvidence = await loadEvidenceIndex(workspaceRoot);
@@ -176,8 +173,8 @@ export async function addManualEvidence(
     ...(options.validUntil ? { valid_until: options.validUntil } : {}),
     review_required: true,
     metadata: {
-      private_evidence_present: true,
-      ...(options.metadata ?? {})
+      ...(options.metadata ?? {}),
+      private_evidence_present: true
     }
   };
 
@@ -675,7 +672,7 @@ function validateManualMetadata(metadata: Record<string, string>): void {
     throw new Error(`Manual evidence metadata contains credential-like metadata at ${credentialPath}.`);
   }
   for (const [key, value] of Object.entries(metadata)) {
-    if (RESERVED_MANUAL_METADATA_KEYS.has(key)) {
+    if (isReservedManualMetadataKey(key)) {
       throw new Error(`Manual evidence metadata contains reserved private metadata at ${key}.`);
     }
     if (isPrivateEvidencePathMetadata(value)) {
@@ -685,6 +682,10 @@ function validateManualMetadata(metadata: Record<string, string>): void {
       throw new Error(`Manual evidence metadata contains local path metadata at ${key}.`);
     }
   }
+}
+
+function isReservedManualMetadataKey(key: string): boolean {
+  return RESERVED_MANUAL_METADATA_KEYS.has(key.toLowerCase().replace(/[^a-z0-9]/g, ""));
 }
 
 function isPrivateEvidencePathMetadata(value: string): boolean {
@@ -706,10 +707,11 @@ function isLocalPathMetadata(value: string): boolean {
     || /(?:^|[\s"'=:(])[A-Za-z]:\//.test(normalized);
 }
 
-async function hashEvidencePath(path: string): Promise<string> {
+async function hashEvidencePath(path: string, workspaceRoot: string): Promise<string> {
+  await resolvePrivateEvidenceRealPath(workspaceRoot, path, "Manual evidence private path");
   const pathStat = await stat(path);
   if (pathStat.isDirectory()) {
-    return hashDirectory(path);
+    return hashDirectory(path, workspaceRoot);
   }
   return hashFile(path);
 }
@@ -718,21 +720,22 @@ async function hashFile(path: string): Promise<string> {
   return createHash("sha256").update(await readFile(path)).digest("hex");
 }
 
-async function hashDirectory(root: string): Promise<string> {
-  const entries = await directoryHashEntries(root, root);
+async function hashDirectory(root: string, workspaceRoot: string): Promise<string> {
+  const entries = await directoryHashEntries(root, root, workspaceRoot);
   return sha256(entries.join("\n"));
 }
 
-async function directoryHashEntries(root: string, current: string): Promise<string[]> {
+async function directoryHashEntries(root: string, current: string, workspaceRoot: string): Promise<string[]> {
   const names = (await readdir(current))
     .filter((name) => name !== ".DS_Store")
     .sort((left, right) => left.localeCompare(right, "en"));
   const entries: string[] = [];
   for (const name of names) {
     const path = join(current, name);
+    await resolvePrivateEvidenceRealPath(workspaceRoot, path, "Manual evidence private path");
     const pathStat = await stat(path);
     if (pathStat.isDirectory()) {
-      entries.push(...await directoryHashEntries(root, path));
+      entries.push(...await directoryHashEntries(root, path, workspaceRoot));
       continue;
     }
     const relativeFilePath = relative(root, path).replaceAll("\\", "/");
@@ -805,15 +808,34 @@ async function resolvePrivateEvidencePath(workspaceRoot: string, inputPath: stri
   }
 
   try {
-    await stat(resolved);
+    await lstat(resolved);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new Error(`${label} does not exist: ${inputPath}`);
     }
     throw error;
   }
+  await resolvePrivateEvidenceRealPath(workspaceRoot, resolved, label, inputPath);
 
   return relativePath;
+}
+
+async function resolvePrivateEvidenceRealPath(
+  workspaceRoot: string,
+  inputPath: string,
+  label: string,
+  displayPath = inputPath
+): Promise<string> {
+  const workspace = await realpath(workspaceRoot);
+  const resolved = await realpath(inputPath);
+  const relativePath = relative(workspace, resolved).replaceAll("\\", "/");
+  if (relativePath === ".." || relativePath.startsWith("../") || isAbsolute(relativePath)) {
+    throw new Error(`${label} symlink resolves outside the workspace: ${displayPath}`);
+  }
+  if (!isPrivateEvidenceRelativePath(relativePath)) {
+    throw new Error(`${label} symlink resolves outside evidence/private/: ${displayPath}`);
+  }
+  return resolved;
 }
 
 function isPrivateEvidenceRelativePath(path: string): boolean {

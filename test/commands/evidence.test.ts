@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -878,6 +879,50 @@ test("addManualEvidence requires an existing private evidence path", async () =>
   }
 });
 
+test("addManualEvidence rejects private evidence symlinks that resolve outside workspace", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-symlink-"));
+  const outsideDir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-outside-"));
+  try {
+    await mkdir(join(dir, "evidence", "private", "ISMS-P-2.5.3"), { recursive: true });
+    await writeFile(join(outsideDir, "outside.md"), "outside file evidence");
+    await symlink(
+      join(outsideDir, "outside.md"),
+      join(dir, "evidence", "private", "ISMS-P-2.5.3", "outside-file.md")
+    );
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_symlink_file",
+      title: "Symlink file",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/outside-file.md",
+      summary: "Symlink file evidence."
+    }), /Manual evidence private path symlink resolves outside the workspace/);
+
+    await mkdir(join(outsideDir, "outside-dir"), { recursive: true });
+    await writeFile(join(outsideDir, "outside-dir", "review.md"), "outside directory evidence");
+    await symlink(
+      join(outsideDir, "outside-dir"),
+      join(dir, "evidence", "private", "ISMS-P-2.5.3", "outside-dir"),
+      "dir"
+    );
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_symlink_dir",
+      title: "Symlink directory",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/outside-dir",
+      summary: "Symlink directory evidence."
+    }), /Manual evidence private path symlink resolves outside the workspace/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(outsideDir, { recursive: true, force: true });
+  }
+});
+
 test("addManualEvidence rejects unsafe classifications and metadata", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-safety-"));
   try {
@@ -916,6 +961,28 @@ test("addManualEvidence rejects unsafe classifications and metadata", async () =
       summary: "Metadata includes unsafe private path key.",
       metadata: { private_evidence_path: "redacted" }
     }), /Manual evidence metadata contains reserved private metadata at private_evidence_path/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_private_marker_metadata_key",
+      title: "Private marker metadata key",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata attempts to override the generated marker.",
+      metadata: { private_evidence_present: "false" }
+    }), /Manual evidence metadata contains reserved private metadata at private_evidence_present/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_private_path_metadata_camel_key",
+      title: "Private path metadata camel key",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe private path camel key.",
+      metadata: { privateEvidencePath: "redacted" }
+    }), /Manual evidence metadata contains reserved private metadata at privateEvidencePath/);
 
     await assert.rejects(addManualEvidence(dir, {
       id: "ev_manual_private_path_metadata_value",
@@ -972,6 +1039,95 @@ test("addManualEvidence rejects unsafe classifications and metadata", async () =
       metadata: { owner: "security" }
     });
     assert.equal(result.item.metadata.owner, "security");
+    assert.equal(result.item.metadata.private_evidence_present, true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("addManualEvidence computes stable content hashes for files and directories", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-hash-"));
+  try {
+    await mkdir(join(dir, "evidence", "private", "hashes"), { recursive: true });
+    const filePath = join(dir, "evidence", "private", "hashes", "file.md");
+    const fileBytes = "# Evidence file\n\nReviewed.\n";
+    await writeFile(filePath, fileBytes);
+
+    const fileResult = await addManualEvidence(dir, {
+      id: "ev_manual_hash_file",
+      title: "Hash file",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/hashes/file.md",
+      summary: "File hash evidence."
+    });
+
+    assert.equal(fileResult.item.content_sha256, createHash("sha256").update(fileBytes).digest("hex"));
+
+    const stableA = join(dir, "evidence", "private", "hashes", "stable-a");
+    await mkdir(stableA, { recursive: true });
+    await writeFile(join(stableA, "b.txt"), "beta");
+    await writeFile(join(stableA, "a.txt"), "alpha");
+    await writeFile(join(stableA, ".DS_Store"), "ignored");
+    const stableAResult = await addManualEvidence(dir, {
+      id: "ev_manual_hash_stable_a",
+      title: "Stable directory A",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/hashes/stable-a",
+      summary: "Directory hash evidence A."
+    });
+
+    const stableB = join(dir, "evidence", "private", "hashes", "stable-b");
+    await mkdir(stableB, { recursive: true });
+    await writeFile(join(stableB, "a.txt"), "alpha");
+    await writeFile(join(stableB, ".DS_Store"), "different ignored content");
+    await writeFile(join(stableB, "b.txt"), "beta");
+    const stableBResult = await addManualEvidence(dir, {
+      id: "ev_manual_hash_stable_b",
+      title: "Stable directory B",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/hashes/stable-b",
+      summary: "Directory hash evidence B."
+    });
+
+    assert.equal(stableAResult.item.content_sha256, stableBResult.item.content_sha256);
+
+    const contentChanged = join(dir, "evidence", "private", "hashes", "content-changed");
+    await mkdir(contentChanged, { recursive: true });
+    await writeFile(join(contentChanged, "a.txt"), "alpha changed");
+    await writeFile(join(contentChanged, "b.txt"), "beta");
+    const contentChangedResult = await addManualEvidence(dir, {
+      id: "ev_manual_hash_content_changed",
+      title: "Content changed directory",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/hashes/content-changed",
+      summary: "Directory hash content change evidence."
+    });
+
+    assert.notEqual(contentChangedResult.item.content_sha256, stableAResult.item.content_sha256);
+
+    const pathChanged = join(dir, "evidence", "private", "hashes", "path-changed");
+    await mkdir(join(pathChanged, "nested"), { recursive: true });
+    await writeFile(join(pathChanged, "nested", "a.txt"), "alpha");
+    await writeFile(join(pathChanged, "b.txt"), "beta");
+    const pathChangedResult = await addManualEvidence(dir, {
+      id: "ev_manual_hash_path_changed",
+      title: "Path changed directory",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/hashes/path-changed",
+      summary: "Directory hash path change evidence."
+    });
+
+    assert.notEqual(pathChangedResult.item.content_sha256, stableAResult.item.content_sha256);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
