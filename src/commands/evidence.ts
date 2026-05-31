@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { EvidenceItem, EvidenceReviewRecord, ReviewDecision } from "../schemas/evidence.js";
+import type { EvidenceClassification, EvidenceItem, EvidenceReviewRecord, EvidenceType, ReviewDecision } from "../schemas/evidence.js";
 import type { ScanResult, ScanSignal } from "../schemas/scan.js";
 
 const execFileAsync = promisify(execFile);
@@ -17,6 +17,20 @@ const PRIVATE_TRACKED_PREFIXES = [
 
 const UNSAFE_PUBLIC_CLASSIFICATIONS = new Set(["secret", "personal_data"]);
 const PUBLIC_EXPORT_CLASSIFICATIONS = new Set(["public_sample"]);
+const MANUAL_EVIDENCE_CLASSIFICATIONS = new Set<EvidenceClassification>(["internal", "confidential", "public_sample"]);
+const EVIDENCE_TYPES = new Set<EvidenceType>([
+  "policy_document",
+  "procedure_document",
+  "configuration_export",
+  "access_review_record",
+  "change_approval_record",
+  "audit_log",
+  "implementation_file",
+  "test_result",
+  "connector_snapshot",
+  "applicability_note"
+]);
+const MANUAL_EVIDENCE_ID_PATTERN = /^ev_[a-z0-9][a-z0-9_]{1,94}$/;
 
 export interface EvidenceValidateOptions {
   public?: boolean;
@@ -40,6 +54,24 @@ export interface EvidenceIndexResult {
   scanPath: string;
   indexedEvidence: number;
   signalCount: number;
+}
+
+export interface EvidenceAddOptions {
+  id: string;
+  title: string;
+  evidenceType: EvidenceType;
+  classification: EvidenceClassification;
+  supports: string[];
+  privateEvidencePath: string;
+  summary: string;
+  validUntil?: string;
+  metadata?: Record<string, string>;
+  collectedAt?: Date;
+}
+
+export interface EvidenceAddResult {
+  outputPath: string;
+  item: EvidenceItem;
 }
 
 export interface EvidenceReviewOptions {
@@ -96,6 +128,81 @@ export interface PublicEvidenceExportResult {
   omittedEvidence: number;
 }
 
+export async function addManualEvidence(
+  workspaceRoot: string,
+  options: EvidenceAddOptions
+): Promise<EvidenceAddResult> {
+  validateManualEvidenceOptions(options);
+  const privateEvidencePath = await resolvePrivateEvidencePath(
+    workspaceRoot,
+    options.privateEvidencePath,
+    "Manual evidence private path"
+  );
+  const contentSha256 = await hashEvidencePath(resolve(workspaceRoot, privateEvidencePath));
+  validateManualMetadata(options.metadata ?? {});
+
+  const existingEvidence = await loadEvidenceIndex(workspaceRoot);
+  if (existingEvidence.some((item) => item.evidence_id === options.id)) {
+    throw new Error(`Evidence id already exists in evidence/index.jsonl: ${options.id}`);
+  }
+
+  const item: EvidenceItem = {
+    evidence_id: options.id,
+    title: options.title.trim(),
+    evidence_type: options.evidenceType,
+    classification: options.classification,
+    lifecycle_status: "needs_review",
+    origin: "manual",
+    supports: [...new Set(options.supports.map((value) => value.trim()).filter(Boolean))]
+      .sort((left, right) => left.localeCompare(right, "en")),
+    locator: {
+      kind: "external_reference",
+      value: options.id
+    },
+    summary: options.summary.trim(),
+    content_sha256: contentSha256,
+    collected_at: (options.collectedAt ?? new Date()).toISOString(),
+    ...(options.validUntil ? { valid_until: options.validUntil } : {}),
+    review_required: true,
+    metadata: {
+      private_evidence_present: true,
+      ...(options.metadata ?? {})
+    }
+  };
+
+  const outputPath = await writeEvidenceIndex(workspaceRoot, [...existingEvidence, item]);
+  return { outputPath, item };
+}
+
+function validateManualEvidenceOptions(options: EvidenceAddOptions): void {
+  if (!MANUAL_EVIDENCE_ID_PATTERN.test(options.id)) {
+    throw new Error("Manual evidence --id must match /^ev_[a-z0-9][a-z0-9_]{1,94}$/.");
+  }
+  if (!options.title.trim()) {
+    throw new Error("Manual evidence requires --title.");
+  }
+  if (!EVIDENCE_TYPES.has(options.evidenceType)) {
+    throw new Error(`Manual evidence type is not supported: ${options.evidenceType}`);
+  }
+  if (!MANUAL_EVIDENCE_CLASSIFICATIONS.has(options.classification)) {
+    throw new Error(`Manual evidence classification ${options.classification} is not supported in evidence add v1.`);
+  }
+  if (options.supports.map((value) => value.trim()).filter(Boolean).length === 0) {
+    throw new Error("Manual evidence requires at least one --supports requirement id.");
+  }
+  for (const requirementId of options.supports) {
+    if (!requirementId.trim().startsWith("ISMS-P-")) {
+      throw new Error(`Manual evidence --supports must use ISMS-P requirement ids: ${requirementId}`);
+    }
+  }
+  if (!options.summary.trim()) {
+    throw new Error("Manual evidence requires --summary.");
+  }
+  if (options.validUntil && Number.isNaN(Date.parse(options.validUntil))) {
+    throw new Error(`Manual evidence --valid-until must be an ISO date: ${options.validUntil}`);
+  }
+}
+
 export async function indexEvidenceFromScan(
   workspaceRoot: string,
   options: EvidenceIndexOptions = {}
@@ -107,11 +214,7 @@ export async function indexEvidenceFromScan(
   const existingEvidence = await loadEvidenceIndex(workspaceRoot);
   const nonScanEvidence = existingEvidence.filter((item) => item.origin !== "scan");
   const evidence = [...nonScanEvidence, ...scan.signals.map((signal) => evidenceFromSignal(signal, scan.generatedAt))];
-  evidence.sort((left, right) => left.evidence_id.localeCompare(right.evidence_id, "en"));
-
-  const outputPath = join(workspaceRoot, "evidence", "index.jsonl");
-  await mkdir(join(workspaceRoot, "evidence"), { recursive: true });
-  await writeFile(outputPath, evidence.map((item) => JSON.stringify(item)).join("\n") + (evidence.length > 0 ? "\n" : ""));
+  const outputPath = await writeEvidenceIndex(workspaceRoot, evidence);
 
   return {
     outputPath,
@@ -436,6 +539,14 @@ export async function loadEvidenceIndex(workspaceRoot: string): Promise<Evidence
   }
 }
 
+async function writeEvidenceIndex(workspaceRoot: string, evidence: EvidenceItem[]): Promise<string> {
+  const outputPath = join(workspaceRoot, "evidence", "index.jsonl");
+  const sorted = [...evidence].sort((left, right) => left.evidence_id.localeCompare(right.evidence_id, "en"));
+  await mkdir(join(workspaceRoot, "evidence"), { recursive: true });
+  await writeFile(outputPath, sorted.map((item) => JSON.stringify(item)).join("\n") + (sorted.length > 0 ? "\n" : ""));
+  return outputPath;
+}
+
 export async function loadEvidenceReviews(workspaceRoot: string): Promise<EvidenceReviewRecord[]> {
   const path = join(workspaceRoot, "reviews", "evidence-review.jsonl");
   try {
@@ -547,6 +658,48 @@ function looksLikeSecret(value: string): boolean {
     || /[A-Za-z0-9_=-]{32,}/.test(value);
 }
 
+function validateManualMetadata(metadata: Record<string, string>): void {
+  const credentialPath = credentialLikeMetadataPath(metadata);
+  if (credentialPath) {
+    throw new Error(`Manual evidence metadata contains credential-like metadata at ${credentialPath}.`);
+  }
+}
+
+async function hashEvidencePath(path: string): Promise<string> {
+  const pathStat = await stat(path);
+  if (pathStat.isDirectory()) {
+    return hashDirectory(path);
+  }
+  return hashFile(path);
+}
+
+async function hashFile(path: string): Promise<string> {
+  return createHash("sha256").update(await readFile(path)).digest("hex");
+}
+
+async function hashDirectory(root: string): Promise<string> {
+  const entries = await directoryHashEntries(root, root);
+  return sha256(entries.join("\n"));
+}
+
+async function directoryHashEntries(root: string, current: string): Promise<string[]> {
+  const names = (await readdir(current))
+    .filter((name) => name !== ".DS_Store")
+    .sort((left, right) => left.localeCompare(right, "en"));
+  const entries: string[] = [];
+  for (const name of names) {
+    const path = join(current, name);
+    const pathStat = await stat(path);
+    if (pathStat.isDirectory()) {
+      entries.push(...await directoryHashEntries(root, path));
+      continue;
+    }
+    const relativeFilePath = relative(root, path).replaceAll("\\", "/");
+    entries.push(`${relativeFilePath}\0${await hashFile(path)}`);
+  }
+  return entries;
+}
+
 async function latestScanPath(workspaceRoot: string): Promise<string> {
   const scansDir = join(workspaceRoot, "scans");
   let names: string[];
@@ -597,18 +750,21 @@ async function resolvePrivateEvidenceReference(workspaceRoot: string, inputPath:
   if (!inputPath?.trim()) {
     throw new Error("Accepted evidence review requires --private-evidence under evidence/private/.");
   }
+  return resolvePrivateEvidencePath(workspaceRoot, inputPath, "Accepted evidence private path");
+}
 
-  const resolved = resolveWorkspacePath(workspaceRoot, inputPath, "Private evidence path");
+async function resolvePrivateEvidencePath(workspaceRoot: string, inputPath: string, label: string): Promise<string> {
+  const resolved = resolveWorkspacePath(workspaceRoot, inputPath, label);
   const relativePath = relative(resolve(workspaceRoot), resolved).replaceAll("\\", "/");
   if (!isPrivateEvidenceRelativePath(relativePath)) {
-    throw new Error(`Accepted evidence private path must be under evidence/private/: ${inputPath}`);
+    throw new Error(`${label} must be under evidence/private/: ${inputPath}`);
   }
 
   try {
     await stat(resolved);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new Error(`Accepted evidence private path does not exist: ${inputPath}`);
+      throw new Error(`${label} does not exist: ${inputPath}`);
     }
     throw error;
   }
