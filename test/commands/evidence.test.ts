@@ -1242,6 +1242,46 @@ test("CLI supports evidence add without storing private evidence paths", async (
   }
 });
 
+test("CLI rejects duplicate scalar evidence add flags without creating an index", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cli-add-duplicate-"));
+  try {
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "authentication-policy", "2026-Q2.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "# Authentication policy\n\nReviewed for 2026 Q2.\n");
+
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "evidence",
+      "add",
+      "--id",
+      "ev_manual_auth_policy_cli_2026_q2",
+      "--id",
+      "ev_manual_auth_policy_cli_2026_q2_duplicate",
+      "--title",
+      "Authentication policy 2026 Q2",
+      "--type",
+      "policy_document",
+      "--classification",
+      "internal",
+      "--supports",
+      "ISMS-P-2.5.3.authentication-policy",
+      "--private-evidence",
+      "evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md",
+      "--summary",
+      "Authentication policy reviewed for 2026 Q2."
+    ], {
+      cwd: dir,
+      encoding: "utf8"
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Usage: isms-agent evidence add/);
+    await assert.rejects(readFile(join(dir, "evidence", "index.jsonl"), "utf8"), /ENOENT/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("CLI supports evidence index, review, and export-public", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-cli-flow-"));
   try {

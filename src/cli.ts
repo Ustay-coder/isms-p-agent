@@ -202,6 +202,7 @@ function parseEvidenceAddArgs(args: string[]): EvidenceAddOptions | undefined {
   let summary: string | undefined;
   let validUntil: string | undefined;
   const metadata: Record<string, string> = {};
+  const scalarFlags = new Set<string>();
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -211,15 +212,27 @@ function parseEvidenceAddArgs(args: string[]): EvidenceAddOptions | undefined {
     }
 
     if (arg === "--id") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       id = value;
     } else if (arg === "--title") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       title = value;
     } else if (arg === "--type") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       if (!isCliEvidenceType(value)) {
         return undefined;
       }
       evidenceType = value;
     } else if (arg === "--classification") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       if (!isCliEvidenceAddClassification(value)) {
         return undefined;
       }
@@ -231,10 +244,19 @@ function parseEvidenceAddArgs(args: string[]): EvidenceAddOptions | undefined {
       }
       supports.push(...parsedSupports);
     } else if (arg === "--private-evidence") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       privateEvidencePath = value;
     } else if (arg === "--summary") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       summary = value;
     } else if (arg === "--valid-until") {
+      if (!markScalarFlag(arg, scalarFlags)) {
+        return undefined;
+      }
       validUntil = value;
     } else if (arg === "--metadata") {
       const parsedMetadata = parseMetadataValue(value);
@@ -263,6 +285,14 @@ function parseEvidenceAddArgs(args: string[]): EvidenceAddOptions | undefined {
     ...(validUntil ? { validUntil } : {}),
     ...(Object.keys(metadata).length > 0 ? { metadata } : {})
   };
+}
+
+function markScalarFlag(flag: string, seenFlags: Set<string>): boolean {
+  if (seenFlags.has(flag)) {
+    return false;
+  }
+  seenFlags.add(flag);
+  return true;
 }
 
 function parseCommaSeparatedValues(value: string): string[] {
