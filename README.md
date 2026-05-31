@@ -148,6 +148,21 @@ isms-agent evidence review ev_cloudflare_security_review_2026_q2 \
 
 Keep the private file path out of `evidence/index.jsonl` locators. Use a public-safe locator such as an internal reference ID, and let the accepted review record carry the private path through `--private-evidence`.
 
+Manual operating evidence can be registered without exposing private paths:
+
+```bash
+isms-agent evidence add \
+  --id ev_manual_auth_policy_2026_q2 \
+  --title "Authentication policy 2026 Q2" \
+  --type policy_document \
+  --classification internal \
+  --supports ISMS-P-2.5.3.authentication-policy \
+  --private-evidence evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md \
+  --summary "Authentication policy reviewed for 2026 Q2."
+```
+
+`evidence add` does not create or approve evidence. It registers an existing private file or directory as `needs_review` metadata. Use `evidence review --decision accepted --private-evidence ...` only after a human control owner confirms the evidence.
+
 See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and evaluation service dry-run flow.
 
 ## Natural-Language Questions with Agents

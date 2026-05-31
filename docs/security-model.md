@@ -30,6 +30,8 @@ Accepted Cloudflare operating evidence must come from manual private-record revi
 
 Accepted review decisions require `--private-evidence <path>`, and that path must exist under `evidence/private/`. Review records store only the workspace-relative private path, and public reports omit private evidence paths and review rationale.
 
+`isms-agent evidence add` registers existing private operating evidence as public-safe metadata. The command requires `--private-evidence evidence/private/...` to exist, but it does not store that path in `evidence/index.jsonl`. The private path is recorded only in an accepted review overlay, and public report/export paths omit it.
+
 Evidence index locators should remain public-safe references. Do not put `evidence/private/...` paths in `evidence/index.jsonl`; use `--private-evidence` on the accepted review record instead.
 
 The default workspace keeps real evidence local:
