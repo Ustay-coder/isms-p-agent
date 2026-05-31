@@ -620,6 +620,42 @@ test("validateEvidence rejects accepted reviews without valid private evidence r
   }
 });
 
+test("validateEvidence rejects accepted review private evidence symlinks that resolve outside workspace", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-accepted-private-symlink-"));
+  const outsideDir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-accepted-private-outside-"));
+  try {
+    await mkdir(join(dir, "evidence", "private", "ISMS-P-2.5.3"), { recursive: true });
+    await mkdir(join(dir, "reviews"), { recursive: true });
+    await writeFile(join(outsideDir, "review.md"), "# outside private evidence\n");
+    await symlink(
+      join(outsideDir, "review.md"),
+      join(dir, "evidence", "private", "ISMS-P-2.5.3", "review.md")
+    );
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({
+      evidence_id: "ev_auth_mfa",
+      supports: ["ISMS-P-2.5.3.admin-mfa"]
+    })) + "\n");
+    await writeFile(join(dir, "reviews", "evidence-review.jsonl"), JSON.stringify({
+      schemaVersion: 1,
+      reviewed_at: "2026-05-28T01:00:00.000Z",
+      evidence_id: "ev_auth_mfa",
+      requirement_id: "ISMS-P-2.5.3.admin-mfa",
+      decision: "accepted",
+      rationale: "Symlinked private evidence.",
+      private_evidence_path: "evidence/private/ISMS-P-2.5.3/review.md"
+    }) + "\n");
+
+    const result = await validateEvidence(dir, { public: true });
+
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join("\n"), /accepted review ev_auth_mfa for ISMS-P-2\.5\.3\.admin-mfa/);
+    assert.match(result.issues.join("\n"), /symlink resolves outside the workspace/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(outsideDir, { recursive: true, force: true });
+  }
+});
+
 test("validateEvidence accepts accepted reviews with private evidence reference and public-safe locator", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-accepted-private-valid-"));
   try {

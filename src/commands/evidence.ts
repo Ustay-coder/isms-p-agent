@@ -451,10 +451,15 @@ async function validateAcceptedReviewPrivateEvidence(
 
     try {
       const resolved = resolveWorkspacePath(workspaceRoot, normalized, "Accepted review private evidence path");
-      await stat(resolved);
+      await lstat(resolved);
+      await resolvePrivateEvidenceRealPath(workspaceRoot, resolved, "Accepted review private evidence path", normalized);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         issues.push(`${label} private_evidence_path does not exist: ${normalized}`);
+        continue;
+      }
+      if (error instanceof Error) {
+        issues.push(`${label} ${error.message}`);
         continue;
       }
       throw error;
