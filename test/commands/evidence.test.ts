@@ -201,6 +201,50 @@ test("indexEvidenceFromScan preserves existing non-scan evidence items", async (
   }
 });
 
+test("indexEvidenceFromScan preserves manual evidence added with addManualEvidence after scanner re-index", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-index-preserve-manual-"));
+  try {
+    await mkdir(join(dir, "scans"), { recursive: true });
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "authentication-policy", "2026-Q2.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "# Authentication policy\n\nReviewed for 2026 Q2.\n");
+    const manual = await addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q2",
+      title: "Authentication policy 2026 Q2",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md",
+      summary: "Authentication policy reviewed for 2026 Q2.",
+      collectedAt: new Date("2026-05-29T00:00:00.000Z")
+    });
+    const scanPath = join(dir, "scans", "scan-2026-05-28T00-00-00-000Z.json");
+    await writeFile(scanPath, stringifyJson(scanResult()));
+
+    await indexEvidenceFromScan(dir, { fromScan: scanPath });
+    const result = await indexEvidenceFromScan(dir, { fromScan: scanPath });
+
+    assert.equal(result.indexedEvidence, 3);
+    const content = await readFile(result.outputPath, "utf8");
+    const rows = content.trim().split("\n").map((line) => JSON.parse(line) as EvidenceItem);
+    const preserved = rows.find((row) => row.evidence_id === "ev_manual_auth_policy_2026_q2");
+    assert.equal(preserved?.origin, "manual");
+    assert.equal(preserved?.lifecycle_status, "needs_review");
+    assert.equal(preserved?.review_required, true);
+    assert.deepEqual(preserved?.locator, {
+      kind: "external_reference",
+      value: "ev_manual_auth_policy_2026_q2"
+    });
+    assert.equal(preserved?.content_sha256, manual.item.content_sha256);
+    assert.equal(preserved?.metadata.private_evidence_present, true);
+    assert.equal(rows.some((row) => row.evidence_id === "ev_scan_local_docs_auth_mfa" && row.origin === "scan"), true);
+    assert.doesNotMatch(content, /evidence\/private/);
+    assert.doesNotMatch(content, /2026-Q2\.md/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("indexEvidenceFromScan keeps only safe Cloudflare connector metadata", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-index-cloudflare-"));
   try {
@@ -831,6 +875,60 @@ test("addManualEvidence registers existing private evidence without storing priv
     assert.match(content, /ev_manual_auth_policy_2026_q2/);
     assert.doesNotMatch(content, /evidence\/private/);
     assert.doesNotMatch(content, /2026-Q2\.md/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("manual evidence validates with warning until accepted review references private evidence", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-review-flow-"));
+  try {
+    const privateEvidencePath = "evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md";
+    const privatePath = join(dir, privateEvidencePath);
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "# Authentication policy\n\nReviewed for 2026 Q2.\n");
+
+    const added = await addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q2",
+      title: "Authentication policy 2026 Q2",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath,
+      summary: "Authentication policy reviewed for 2026 Q2.",
+      collectedAt: new Date("2026-05-29T00:00:00.000Z")
+    });
+
+    assert.equal(added.item.lifecycle_status, "needs_review");
+    assert.equal(added.item.review_required, true);
+    const beforeReview = await validateEvidence(dir, { public: true });
+    assert.equal(beforeReview.valid, true);
+    assert.deepEqual(beforeReview.issues, []);
+    assert.match(beforeReview.warnings.join("\n"), /ev_manual_auth_policy_2026_q2/);
+    assert.match(beforeReview.warnings.join("\n"), /has candidate requirement mapping but no review decision/);
+
+    const reviewed = await reviewEvidence(dir, {
+      evidenceId: "ev_manual_auth_policy_2026_q2",
+      requirementId: "ISMS-P-2.5.3.authentication-policy",
+      decision: "accepted",
+      rationale: "Security owner confirmed the private authentication policy review.",
+      reviewer: "security-owner",
+      privateEvidencePath,
+      reviewedAt: new Date("2026-05-29T01:00:00.000Z")
+    });
+
+    assert.equal(reviewed.record.private_evidence_path, privateEvidencePath);
+    const afterReview = await validateEvidence(dir, { public: true });
+    assert.equal(afterReview.valid, true);
+    assert.deepEqual(afterReview.issues, []);
+    assert.deepEqual(afterReview.warnings, []);
+    const indexContent = await readFile(join(dir, "evidence", "index.jsonl"), "utf8");
+    const rows = indexContent.trim().split("\n").map((line) => JSON.parse(line) as EvidenceItem);
+    const preserved = rows.find((row) => row.evidence_id === "ev_manual_auth_policy_2026_q2");
+    assert.equal(preserved?.lifecycle_status, "needs_review");
+    assert.equal(preserved?.review_required, true);
+    assert.doesNotMatch(indexContent, /evidence\/private/);
+    assert.doesNotMatch(indexContent, /2026-Q2\.md/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
