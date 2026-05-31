@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence } from "../../src/commands/evidence.js";
+import { addManualEvidence, exportPublicEvidence, indexEvidenceFromScan, reviewCloudflareEvidence, reviewEvidence, validateEvidence } from "../../src/commands/evidence.js";
 import { stringifyJson } from "../../src/core/json.js";
 import type { EvidenceItem } from "../../src/schemas/evidence.js";
 import type { ScanResult } from "../../src/schemas/scan.js";
@@ -753,6 +753,145 @@ test("validateEvidence rejects git-tracked private evidence paths", async () => 
     assert.equal(result.valid, false);
     assert.match(result.issues.join("\n"), /git-tracked private evidence path/);
     assert.match(result.issues.join("\n"), /evidence\/private\/cloudflare-export\.json/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("addManualEvidence registers existing private evidence without storing private path", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-"));
+  try {
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "authentication-policy", "2026-Q2.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "# Authentication policy\n\nReviewed for 2026 Q2.\n");
+
+    const result = await addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q2",
+      title: "Authentication policy 2026 Q2",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md",
+      summary: "Authentication policy reviewed for 2026 Q2.",
+      collectedAt: new Date("2026-05-29T00:00:00.000Z")
+    });
+
+    assert.equal(result.outputPath, join(dir, "evidence", "index.jsonl"));
+    assert.equal(result.item.evidence_id, "ev_manual_auth_policy_2026_q2");
+    assert.equal(result.item.origin, "manual");
+    assert.equal(result.item.lifecycle_status, "needs_review");
+    assert.equal(result.item.review_required, true);
+    assert.deepEqual(result.item.supports, ["ISMS-P-2.5.3.authentication-policy"]);
+    assert.deepEqual(result.item.locator, {
+      kind: "external_reference",
+      value: "ev_manual_auth_policy_2026_q2"
+    });
+    assert.equal(result.item.metadata.private_evidence_present, true);
+    assert.equal(typeof result.item.content_sha256, "string");
+    assert.equal(result.item.content_sha256?.length, 64);
+
+    const content = await readFile(join(dir, "evidence", "index.jsonl"), "utf8");
+    assert.match(content, /ev_manual_auth_policy_2026_q2/);
+    assert.doesNotMatch(content, /evidence\/private/);
+    assert.doesNotMatch(content, /2026-Q2\.md/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("addManualEvidence rejects duplicate evidence ids", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-duplicate-"));
+  try {
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "review.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "review");
+    await mkdir(join(dir, "evidence"), { recursive: true });
+    await writeFile(join(dir, "evidence", "index.jsonl"), JSON.stringify(evidence({
+      evidence_id: "ev_manual_auth_policy_2026_q2",
+      origin: "manual"
+    })) + "\n");
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q2",
+      title: "Authentication policy 2026 Q2",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Authentication policy reviewed for 2026 Q2."
+    }), /Evidence id already exists in evidence\/index\.jsonl: ev_manual_auth_policy_2026_q2/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("addManualEvidence requires an existing private evidence path", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-path-"));
+  try {
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q2",
+      title: "Authentication policy 2026 Q2",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/missing.md",
+      summary: "Authentication policy reviewed for 2026 Q2."
+    }), /Manual evidence private path does not exist/);
+
+    const publicPath = join(dir, "project", "review.md");
+    await mkdir(join(publicPath, ".."), { recursive: true });
+    await writeFile(publicPath, "review");
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q3",
+      title: "Authentication policy 2026 Q3",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "project/review.md",
+      summary: "Authentication policy reviewed for 2026 Q3."
+    }), /Manual evidence private path must be under evidence\/private\//);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_auth_policy_2026_q4",
+      title: "Authentication policy 2026 Q4",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "../outside.md",
+      summary: "Authentication policy reviewed for 2026 Q4."
+    }), /Manual evidence private path must be inside the workspace/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("addManualEvidence rejects unsafe classifications and metadata", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-add-safety-"));
+  try {
+    const privatePath = join(dir, "evidence", "private", "ISMS-P-2.5.3", "review.md");
+    await mkdir(join(privatePath, ".."), { recursive: true });
+    await writeFile(privatePath, "review");
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_secret",
+      title: "Secret evidence",
+      evidenceType: "policy_document",
+      classification: "secret",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Secret evidence."
+    }), /Manual evidence classification secret is not supported/);
+
+    await assert.rejects(addManualEvidence(dir, {
+      id: "ev_manual_token_metadata",
+      title: "Token metadata",
+      evidenceType: "policy_document",
+      classification: "internal",
+      supports: ["ISMS-P-2.5.3.authentication-policy"],
+      privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
+      summary: "Metadata includes unsafe key.",
+      metadata: { token: "redacted-token-placeholder" }
+    }), /Manual evidence metadata contains credential-like metadata at token/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
