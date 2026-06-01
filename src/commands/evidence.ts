@@ -783,12 +783,12 @@ async function latestScanPath(workspaceRoot: string): Promise<string> {
     names = (await readdir(scansDir)).filter((name) => name.endsWith(".json"));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new Error("No scan JSON files found in scans/. Run isms-agent scan before evidence index.");
+      throw new Error("No scan JSON files found in scans/. Run ismsp scan before evidence index.");
     }
     throw error;
   }
   if (names.length === 0) {
-    throw new Error("No scan JSON files found in scans/. Run isms-agent scan before evidence index.");
+    throw new Error("No scan JSON files found in scans/. Run ismsp scan before evidence index.");
   }
 
   const candidates = [];

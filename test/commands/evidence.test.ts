@@ -846,7 +846,7 @@ test("public evidence validation and exports do not expose Cloudflare review rat
 test("indexEvidenceFromScan reports a friendly error when scans are missing", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-index-missing-scans-"));
   try {
-    await assert.rejects(indexEvidenceFromScan(dir), /No scan JSON files found in scans\/\. Run isms-agent scan before evidence index\./);
+    await assert.rejects(indexEvidenceFromScan(dir), /No scan JSON files found in scans\/\. Run ismsp scan before evidence index\./);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -1427,7 +1427,7 @@ test("CLI rejects duplicate scalar evidence add flags without creating an index"
     });
 
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Usage: isms-agent evidence add/);
+    assert.match(result.stderr, /Usage: ismsp evidence add/);
     await assert.rejects(readFile(join(dir, "evidence", "index.jsonl"), "utf8"), /ENOENT/);
   } finally {
     await rm(dir, { recursive: true, force: true });

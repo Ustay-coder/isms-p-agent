@@ -276,7 +276,7 @@ test("CLI supports scan --local with an optional target path", async () => {
         encoding: "utf8"
       });
       assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage: isms-agent scan --local/);
+      assert.match(result.stderr, /Usage: ismsp scan --local/);
     }
   } finally {
     await rm(dir, { recursive: true, force: true });

@@ -159,20 +159,20 @@ async function main(argv: string[]): Promise<void> {
     }
   }
 
-  console.error("Usage: isms-agent init");
-  console.error("Usage: isms-agent ingest <raw-file>");
-  console.error("Usage: isms-agent scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id] [--cloudflare-account account-id] [--cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway]");
-  console.error("Usage: isms-agent report [--public]");
-  console.error("Usage: isms-agent evidence add --id <id> --title <text> --type <type> --classification <internal|confidential|public_sample> --supports <ids> --private-evidence evidence/private/... --summary <text> [--valid-until <iso>] [--metadata key=value]");
-  console.error("Usage: isms-agent evidence index [--from-scan scans/file.json]");
-  console.error("Usage: isms-agent evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>] [--private-evidence evidence/private/...]");
-  console.error("Usage: isms-agent evidence review-cloudflare [--decision needs_followup|rejected] [--rationale <text>] [--reviewer <name>] [--dry-run]");
-  console.error("Usage: isms-agent evidence export-public");
-  console.error("Usage: isms-agent evidence validate [--public]");
-  console.error("Usage: isms-agent pack install [pack-dir] [--overwrite]");
-  console.error("Usage: isms-agent pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
-  console.error("Usage: isms-agent pack validate [pack-dir]");
-  console.error("Usage: isms-agent ask-context <question> [--json] [--markdown]");
+  console.error("Usage: ismsp init");
+  console.error("Usage: ismsp ingest <raw-file>");
+  console.error("Usage: ismsp scan --local [--target path] [--include paths] [--exclude paths] [--github owner/repo] [--vercel project] [--cloudflare zone-or-zone-id] [--cloudflare-account account-id] [--cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway]");
+  console.error("Usage: ismsp report [--public]");
+  console.error("Usage: ismsp evidence add --id <id> --title <text> --type <type> --classification <internal|confidential|public_sample> --supports <ids> --private-evidence evidence/private/... --summary <text> [--valid-until <iso>] [--metadata key=value]");
+  console.error("Usage: ismsp evidence index [--from-scan scans/file.json]");
+  console.error("Usage: ismsp evidence review <evidence-id> --requirement <id> --decision <accepted|rejected|needs_followup> --rationale <text> [--reviewer <name>] [--expires-at <iso>] [--private-evidence evidence/private/...]");
+  console.error("Usage: ismsp evidence review-cloudflare [--decision needs_followup|rejected] [--rationale <text>] [--reviewer <name>] [--dry-run]");
+  console.error("Usage: ismsp evidence export-public");
+  console.error("Usage: ismsp evidence validate [--public]");
+  console.error("Usage: ismsp pack install [pack-dir] [--overwrite]");
+  console.error("Usage: ismsp pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
+  console.error("Usage: ismsp pack validate [pack-dir]");
+  console.error("Usage: ismsp ask-context <question> [--json] [--markdown]");
   process.exitCode = 1;
 }
 

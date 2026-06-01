@@ -77,7 +77,7 @@ Run:
 
 ```bash
 npm run build
-node dist/cli.js pack validate packs/isms-p-core-v0
+ismsp pack validate packs/isms-p-core-v0
 npm test -- --test-name-pattern pack
 ```
 

@@ -51,5 +51,5 @@ test("CLI rejects incomplete pack generate arguments", () => {
   });
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Usage: isms-agent pack generate/);
+  assert.match(result.stderr, /Usage: ismsp pack generate/);
 });

@@ -159,7 +159,7 @@ test("CLI supports ingest with exactly one raw file argument", async () => {
         encoding: "utf8"
       });
       assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage: isms-agent ingest <raw-file>/);
+      assert.match(result.stderr, /Usage: ismsp ingest <raw-file>/);
     }
   } finally {
     await rm(dir, { recursive: true, force: true });

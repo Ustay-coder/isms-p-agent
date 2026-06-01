@@ -70,7 +70,7 @@ test("CLI rejects init arguments without mutating cwd", async () => {
       });
 
       assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage: isms-agent init/);
+      assert.match(result.stderr, /Usage: ismsp init/);
 
       for (const name of ["raw", "wiki", "controls", "project", "connectors", "scans", "reports", "evidence", "reviews"]) {
         await assert.rejects(stat(join(dir, name)), { code: "ENOENT" });

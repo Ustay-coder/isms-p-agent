@@ -24,33 +24,36 @@ cd isms-p-agent
 npm ci
 npm run build
 npm test
+npm link
 ```
 
 Validate the bundled public control pack:
 
 ```bash
-node dist/cli.js pack validate packs/isms-p-core-v0
+ismsp pack validate packs/isms-p-core-v0
 ```
 
 Run the synthetic end-to-end sample:
 
 ```bash
-node dist/cli.js init
-node dist/cli.js pack install packs/isms-p-core-v0
-node dist/cli.js scan --local --target examples/e2e-sample
-node dist/cli.js evidence index
-node dist/cli.js report --public
-node dist/cli.js evidence export-public
-node dist/cli.js evidence validate --public
+ismsp init
+ismsp pack install packs/isms-p-core-v0
+ismsp scan --local --target examples/e2e-sample
+ismsp evidence index
+ismsp report --public
+ismsp evidence export-public
+ismsp evidence validate --public
 ```
 
 Ask a local coding agent to answer from the grounded context bundle:
 
 ```bash
-node dist/cli.js ask-context "What ISMS-P gaps should we handle first?" --markdown
+ismsp ask-context "What ISMS-P gaps should we handle first?" --markdown
 ```
 
 The `ask-context` command does not call an LLM API. It prepares conservative context so Codex, Claude Code, or another local agent can answer without treating candidate evidence as certification-ready evidence.
+
+`ismsp` is the primary CLI command. `isms-agent` remains available as a backwards-compatible alias when the package is linked or installed.
 
 ## Implementation Approach
 
@@ -108,28 +111,28 @@ The intended flow is:
 npm ci
 npm run build
 npm test
-node dist/cli.js pack validate packs/isms-p-core-v0
 npm link
-isms-agent init
-isms-agent ingest raw/example.md
-isms-agent scan --local
-isms-agent scan --local --target project/sample-service
-isms-agent scan --local --target project/sample-service --include app,services,repositories,db,lib,specs --exclude __tests__
-isms-agent scan --cloudflare example.com
-isms-agent scan \
+ismsp pack validate packs/isms-p-core-v0
+ismsp init
+ismsp ingest raw/example.md
+ismsp scan --local
+ismsp scan --local --target project/sample-service
+ismsp scan --local --target project/sample-service --include app,services,repositories,db,lib,specs --exclude __tests__
+ismsp scan --cloudflare example.com
+ismsp scan \
   --cloudflare example.com \
   --cloudflare-account account_123 \
   --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
-isms-agent evidence index
-isms-agent evidence review ev_scan_local_docs_auth_mfa \
+ismsp evidence index
+ismsp evidence review ev_scan_local_docs_auth_mfa \
   --requirement ISMS-P-2.5.3.admin-mfa \
   --decision needs_followup \
   --rationale "Production enforcement record is still required."
-isms-agent report
-isms-agent report --public
-isms-agent evidence export-public
-isms-agent evidence validate --public
-isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
+ismsp report
+ismsp report --public
+ismsp evidence export-public
+ismsp evidence validate --public
+ismsp ask-context "2.5.3 사용자 인증 상태 알려줘"
 ```
 
 Generated workspace directories:
@@ -151,13 +154,13 @@ Use `--target <path>` when the workspace contains multiple services or copied re
 Cloudflare scans require `CLOUDFLARE_API_TOKEN` and are read-only. Zone-only scans keep the legacy shape:
 
 ```bash
-CLOUDFLARE_API_TOKEN=... isms-agent scan --cloudflare example.com
+CLOUDFLARE_API_TOKEN=... ismsp scan --cloudflare example.com
 ```
 
 Account product scans are opt-in:
 
 ```bash
-CLOUDFLARE_API_TOKEN=... isms-agent scan \
+CLOUDFLARE_API_TOKEN=... ismsp scan \
   --cloudflare example.com \
   --cloudflare-account account_123 \
   --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
@@ -166,21 +169,21 @@ CLOUDFLARE_API_TOKEN=... isms-agent scan \
 Cloudflare connector output is candidate metadata, not accepted audit evidence. It records product availability, counts, permission status, and requirement mappings only. Continue through the evidence review flow before using it in readiness decisions:
 
 ```bash
-isms-agent evidence index
-isms-agent evidence review-cloudflare \
+ismsp evidence index
+ismsp evidence review-cloudflare \
   --decision needs_followup \
   --reviewer security-owner
-isms-agent evidence validate --public
+ismsp evidence validate --public
 ```
 
-`review-cloudflare` is a bulk overlay for Cloudflare scanner output. It marks configuration snapshots as `needs_followup` by default and writes one private review record per supported requirement. Bulk review can record only `needs_followup` or an explicit `rejected` decision for Cloudflare scanner output; it cannot create `accepted` decisions. Use `isms-agent evidence review <evidence-id>` only after a human owner confirms operating evidence such as an access review, change approval, or dated cloud security review.
+`review-cloudflare` is a bulk overlay for Cloudflare scanner output. It marks configuration snapshots as `needs_followup` by default and writes one private review record per supported requirement. Bulk review can record only `needs_followup` or an explicit `rejected` decision for Cloudflare scanner output; it cannot create `accepted` decisions. Use `ismsp evidence review <evidence-id>` only after a human owner confirms operating evidence such as an access review, change approval, or dated cloud security review.
 
 Accepted Cloudflare evidence is a manual operating-evidence decision. Before recording `--decision accepted`, use the private templates in [docs/evidence-templates/cloudflare/](docs/evidence-templates/cloudflare/) to confirm accepted criteria, private storage, and public export rules. Scanner output alone is not enough to accept ISMS-P-2.10.2 operating evidence.
 
 Accepted decisions must reference an existing local private evidence file or directory under `evidence/private/`:
 
 ```bash
-isms-agent evidence review ev_cloudflare_security_review_2026_q2 \
+ismsp evidence review ev_cloudflare_security_review_2026_q2 \
   --requirement ISMS-P-2.10.2.cloudflare-config-export \
   --decision accepted \
   --private-evidence evidence/private/ISMS-P-2.10.2/security-review/2026-Q2.md \
@@ -193,7 +196,7 @@ Keep the private file path out of `evidence/index.jsonl` locators. Use a public-
 Manual operating evidence can be registered without exposing private paths:
 
 ```bash
-isms-agent evidence add \
+ismsp evidence add \
   --id ev_manual_auth_policy_2026_q2 \
   --title "Authentication policy 2026 Q2" \
   --type policy_document \
@@ -212,9 +215,9 @@ See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the curre
 The CLI does not need a separate LLM API key for natural-language answers. Instead, it exposes a grounded context bundle that Codex, Claude Code, or another local coding agent can read and turn into an answer.
 
 ```bash
-isms-agent ask-context "2.5.3 사용자 인증 상태 알려줘"
-isms-agent ask-context "이번 주 먼저 처리할 항목은?" --markdown
-isms-agent ask-context "사용자 인증 증적은 무엇이 부족해?"
+ismsp ask-context "2.5.3 사용자 인증 상태 알려줘"
+ismsp ask-context "이번 주 먼저 처리할 항목은?" --markdown
+ismsp ask-context "사용자 인증 증적은 무엇이 부족해?"
 ```
 
 Default output is JSON for agent callers. `--markdown` prints the same context in a compact human-readable form.
@@ -225,7 +228,7 @@ The command is read-only. It reuses the existing conservative analyzer, returns 
 
 Evidence found by scanners is candidate evidence only. Real service evidence should stay in the local workspace and should not be committed to the public repository.
 
-`isms-agent init` creates private evidence directories and default ignore rules:
+`ismsp init` creates private evidence directories and default ignore rules:
 
 ```text
 evidence/private/  real evidence files, ignored by default
@@ -236,9 +239,9 @@ reviews/           human review overlay records, ignored by default
 Run the public safety gate before publishing examples or reports:
 
 ```bash
-isms-agent evidence export-public
-isms-agent report --public
-isms-agent evidence validate --public
+ismsp evidence export-public
+ismsp report --public
+ismsp evidence validate --public
 ```
 
 The validator fails when private evidence, scans, reports, or review overlays are tracked by git, or when public evidence metadata contains unsafe classifications or credential-like values. `report --public` and `evidence export-public` omit locators, raw payloads, source excerpts, private paths, and review rationale.
@@ -262,12 +265,12 @@ Contributors can improve reviewed controls through source-traceable pull request
 Maintainers can generate a draft pack from a local OpenKB root:
 
 ```bash
-isms-agent pack generate \
+ismsp pack generate \
   --openkb /path/to/09_보안_ISMS-P_openkb \
   --pack packs/isms-p-core-v1 \
   --controls ISMS-P-2.5.3,ISMS-P-2.5.6
 
-isms-agent pack validate packs/isms-p-core-v1
+ismsp pack validate packs/isms-p-core-v1
 ```
 
 Generated packs are draft knowledge. Every generated control starts with `review_status: needs_human_review`, uses compiled/wiki OpenKB sources as direct source refs, and keeps `raw/legal/*` rows as cross-check references only.
@@ -275,8 +278,8 @@ Generated packs are draft knowledge. Every generated control starts with `review
 Validate the pack before copying it into a workspace:
 
 ```bash
-isms-agent pack validate
-isms-agent pack validate packs/isms-p-core-v0
+ismsp pack validate
+ismsp pack validate packs/isms-p-core-v0
 ```
 
 The validator rejects public-pack safety problems such as private overlay paths, raw legal profile rows used as direct `source_refs`, mismatched `pack.json` control lists, missing compiled OpenKB references, and deleted controls that are not modeled as human-reviewed residual risk.
@@ -284,16 +287,16 @@ The validator rejects public-pack safety problems such as private overlay paths,
 Install a curated pack into a workspace before generating reports:
 
 ```bash
-isms-agent pack install packs/isms-p-core-v0
-isms-agent scan --local
-isms-agent evidence index
-isms-agent report
+ismsp pack install packs/isms-p-core-v0
+ismsp scan --local
+ismsp evidence index
+ismsp report
 ```
 
 Use `--overwrite` only when you intentionally want curated pack controls to replace local workspace controls:
 
 ```bash
-isms-agent pack install packs/isms-p-core-v0 --overwrite
+ismsp pack install packs/isms-p-core-v0 --overwrite
 ```
 
 `pack install` validates the pack first, then copies public control JSON files into `controls/`. `installedControls` means controls that are now present and up to date after the install, including pre-existing files that already matched the pack. `skippedControls` means existing local files were preserved because they differ from the pack and `--overwrite` was not requested.

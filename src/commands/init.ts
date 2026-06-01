@@ -19,7 +19,7 @@ const AGENTS_TEMPLATE = `# AGENTS.md
 const CONFIG_TEMPLATE = {
   schemaVersion: 1,
   workspaceKind: "isms-p-agent",
-  createdBy: "isms-agent init",
+  createdBy: "ismsp init",
   reportFormats: ["markdown"]
 };
 
