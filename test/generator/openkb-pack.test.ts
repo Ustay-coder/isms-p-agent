@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { validatePack } from "../../src/commands/pack.js";
 import { readJsonl } from "../../src/core/jsonl.js";
-import { generatePackFromOpenKb } from "../../src/generator/openkb-pack.js";
+import { generatePackFromOpenKb, selectSupportedAnnex72ControlIds } from "../../src/generator/openkb-pack.js";
 
 test("readJsonl parses non-empty JSONL records", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-jsonl-"));
@@ -87,7 +87,7 @@ test("OpenKB fixture wiki pages exist for generated controls", async () => {
   assert.match(deletedWiki, /삭제 상태/);
 });
 
-test("generatePackFromOpenKb uses source claim effective_status when annex status is deleted", async () => {
+test("generatePackFromOpenKb keeps annex status authoritative over source claim status", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-generate-effective-status-"));
   try {
     const openkbRoot = join(dir, "openkb");
@@ -111,11 +111,59 @@ test("generatePackFromOpenKb uses source claim effective_status when annex statu
     const generated = JSON.parse(await readFile(join(packRoot, "controls", "ISMS-P-2.2.4.json"), "utf8"));
     assert.equal(generated.control_id, "ISMS-P-2.2.4");
     assert.equal(generated.title, "인식제고 및 교육훈련");
-    assert.equal(generated.pack.effective_status, "active");
+    assert.equal(generated.pack.effective_status, "deleted_residual_risk");
     assert.equal(generated.pack.review_status, "needs_human_review");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test("selectSupportedAnnex72ControlIds selects only 유지 and 삭제 non-merged controls", () => {
+  assert.deepEqual(
+    selectSupportedAnnex72ControlIds([
+      {
+        control_id: "ISMS-P-1.1.1",
+        control_name: "유지 통제",
+        part: "관리체계 수립 및 운영",
+        domain_id: "1.1",
+        status: "유지",
+        simplified_control_id: "ISMS-P-1.1.1",
+        merged_into: null,
+        source_pages: [1]
+      },
+      {
+        control_id: "ISMS-P-1.1.2",
+        control_name: "삭제 통제",
+        part: "관리체계 수립 및 운영",
+        domain_id: "1.1",
+        status: "삭제",
+        simplified_control_id: "ISMS-P-1.1.2",
+        merged_into: null,
+        source_pages: [1]
+      },
+      {
+        control_id: "ISMS-P-1.1.3",
+        control_name: "완화 통제",
+        part: "관리체계 수립 및 운영",
+        domain_id: "1.1",
+        status: "완화",
+        simplified_control_id: "ISMS-P-1.1.3",
+        merged_into: null,
+        source_pages: [1]
+      },
+      {
+        control_id: "ISMS-P-1.1.4",
+        control_name: "병합 통제",
+        part: "관리체계 수립 및 운영",
+        domain_id: "1.1",
+        status: "병합",
+        simplified_control_id: "ISMS-P-1.1.4",
+        merged_into: "ISMS-P-1.1.1",
+        source_pages: [1]
+      }
+    ]),
+    ["ISMS-P-1.1.1", "ISMS-P-1.1.2"]
+  );
 });
 
 test("generatePackFromOpenKb validates annex status even when source claim effective_status exists", async () => {
@@ -174,6 +222,17 @@ test("generatePackFromOpenKb writes active and deleted residual-risk controls", 
       "사용자 인증 정책·절차 문서",
       "MFA 및 세션 인증 설정 근거"
     ]);
+    assert.deepEqual(
+      active.requirements.map((requirement: { requirement_id: string; kind: string; title: string }) => [
+        requirement.requirement_id,
+        requirement.kind,
+        requirement.title
+      ]),
+      [
+        ["ISMS-P-2.5.3.isms-p-2-5-3-001", "policy", "사용자 인증 정책·절차 문서"],
+        ["ISMS-P-2.5.3.isms-p-2-5-3-002", "configuration", "MFA 및 세션 인증 설정 근거"]
+      ]
+    );
 
     const deleted = JSON.parse(await readFile(join(packRoot, "controls", "ISMS-P-2.5.6.json"), "utf8"));
     assert.equal(deleted.control_id, "ISMS-P-2.5.6");

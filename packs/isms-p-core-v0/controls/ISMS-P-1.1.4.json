@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-1.1.4",
+  "title": "범위 설정",
+  "domain": "관리체계 수립 및 운영",
+  "category": "관리체계 기반 마련",
+  "requirement": "범위 설정: 범위 설정 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-1.1.4 범위 설정 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 범위 설정?",
+    "Is there an owner for reviewing 범위 설정 evidence?"
+  ],
+  "observable_signals": [
+    "범위 설정",
+    "범위 설정 정책·절차 문서",
+    "범위 설정 운영 이행 기록",
+    "범위 설정 정기 검토 및 개선 기록",
+    "관리체계 역할·책임 승인 기록",
+    "ISMS-P 인증 범위 정의서",
+    "policy",
+    "record",
+    "review_record",
+    "approval_record",
+    "scope_statement"
+  ],
+  "required_operating_practices": [
+    "범위 설정 policy ownership and review cycle",
+    "범위 설정 evidence review",
+    "범위 설정 exception approval"
+  ],
+  "required_evidence": [
+    "범위 설정 정책·절차 문서",
+    "범위 설정 운영 이행 기록",
+    "범위 설정 정기 검토 및 개선 기록",
+    "관리체계 역할·책임 승인 기록",
+    "ISMS-P 인증 범위 정의서"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-1.1.4.isms-p-1-1-4-001",
+      "control_id": "ISMS-P-1.1.4",
+      "title": "범위 설정 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.1.4-001"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.1.4 범위 설정"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.1.4.isms-p-1-1-4-002",
+      "control_id": "ISMS-P-1.1.4",
+      "title": "범위 설정 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.1.4-002"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.1.4 범위 설정"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.1.4.isms-p-1-1-4-003",
+      "control_id": "ISMS-P-1.1.4",
+      "title": "범위 설정 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.1.4-003"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.1.4 범위 설정"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.1.4.isms-p-1-1-4-004",
+      "control_id": "ISMS-P-1.1.4",
+      "title": "관리체계 역할·책임 승인 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "approval_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.1.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.1.4 범위 설정"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.1.4.isms-p-1-1-4-005",
+      "control_id": "ISMS-P-1.1.4",
+      "title": "ISMS-P 인증 범위 정의서",
+      "kind": "applicability",
+      "required": true,
+      "evidence_types": [
+        "scope_statement"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.1.4-005"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.1.4 범위 설정"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "범위 설정 evidence exists but has no owner",
+    "범위 설정 settings are captured once but not reviewed",
+    "범위 설정 exceptions are handled informally"
+  ],
+  "automation_potential": "none",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-1.1.4 범위 설정 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-1.1.4"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-1.1.4-001, EV-ISMS-P-1.1.4-002, EV-ISMS-P-1.1.4-003, EV-ISMS-P-1.1.4-004, EV-ISMS-P-1.1.4-005"
+    },
+    {
+      "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-1.1.4 범위 설정"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-1.1.4",
+    "effective_status": "active",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

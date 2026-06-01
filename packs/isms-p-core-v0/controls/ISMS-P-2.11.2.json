@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.11.2",
+  "title": "취약점 점검 및 조치",
+  "domain": "보호대책 요구사항",
+  "category": "사고 예방 및 대응",
+  "requirement": "취약점 점검 및 조치: 취약점 점검 및 조치 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-2.11.2 취약점 점검 및 조치 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 취약점 점검 및 조치?",
+    "Is there an owner for reviewing 취약점 점검 및 조치 evidence?"
+  ],
+  "observable_signals": [
+    "취약점 점검 및 조치",
+    "취약점 점검 및 조치 정책·절차 문서",
+    "취약점 점검 및 조치 운영 이행 기록",
+    "취약점 점검 및 조치 정기 검토 및 개선 기록",
+    "보안 사고 대응·취약점 조치·모니터링 기록",
+    "policy",
+    "record",
+    "review_record",
+    "monitoring_report"
+  ],
+  "required_operating_practices": [
+    "취약점 점검 및 조치 policy ownership and review cycle",
+    "취약점 점검 및 조치 evidence review",
+    "취약점 점검 및 조치 exception approval"
+  ],
+  "required_evidence": [
+    "취약점 점검 및 조치 정책·절차 문서",
+    "취약점 점검 및 조치 운영 이행 기록",
+    "취약점 점검 및 조치 정기 검토 및 개선 기록",
+    "보안 사고 대응·취약점 조치·모니터링 기록"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.11.2.isms-p-2-11-2-001",
+      "control_id": "ISMS-P-2.11.2",
+      "title": "취약점 점검 및 조치 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.11.2-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.2_취약점_점검_및_조치.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.11.2 취약점 점검 및 조치"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.11.2.isms-p-2-11-2-002",
+      "control_id": "ISMS-P-2.11.2",
+      "title": "취약점 점검 및 조치 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.11.2-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.2_취약점_점검_및_조치.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.11.2 취약점 점검 및 조치"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.11.2.isms-p-2-11-2-003",
+      "control_id": "ISMS-P-2.11.2",
+      "title": "취약점 점검 및 조치 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.11.2-003"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.2_취약점_점검_및_조치.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.11.2 취약점 점검 및 조치"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.11.2.isms-p-2-11-2-004",
+      "control_id": "ISMS-P-2.11.2",
+      "title": "보안 사고 대응·취약점 조치·모니터링 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "monitoring_report"
+      ],
+      "review_frequency": "monthly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.11.2-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.2_취약점_점검_및_조치.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.11.2 취약점 점검 및 조치"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "취약점 점검 및 조치 evidence exists but has no owner",
+    "취약점 점검 및 조치 settings are captured once but not reviewed",
+    "취약점 점검 및 조치 exceptions are handled informally"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.11.2 취약점 점검 및 조치 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.11.2"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.11.2-001, EV-ISMS-P-2.11.2-002, EV-ISMS-P-2.11.2-003, EV-ISMS-P-2.11.2-004"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.2_취약점_점검_및_조치.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.11.2 취약점 점검 및 조치"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.11.2",
+    "effective_status": "active",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

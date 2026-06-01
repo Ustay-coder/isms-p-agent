@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-3.5.1",
+  "title": "개인정보 처리방침 공개",
+  "domain": "개인정보 처리단계별 요구사항",
+  "category": "정보주체 권리보호",
+  "requirement": "개인정보 처리방침 공개: 개인정보 처리방침 공개 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-3.5.1 개인정보 처리방침 공개 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 개인정보 처리방침 공개?",
+    "Is there an owner for reviewing 개인정보 처리방침 공개 evidence?"
+  ],
+  "observable_signals": [
+    "개인정보 처리방침 공개",
+    "개인정보 처리방침 공개 정책·절차 문서",
+    "개인정보 처리방침 공개 운영 이행 기록",
+    "개인정보 처리방침 공개 정기 검토 및 개선 기록",
+    "정보주체 권리 요청 및 처리 기록",
+    "개인정보 처리방침 공개 및 변경 이력",
+    "policy",
+    "record",
+    "review_record",
+    "privacy_record",
+    "privacy_policy"
+  ],
+  "required_operating_practices": [
+    "개인정보 처리방침 공개 policy ownership and review cycle",
+    "개인정보 처리방침 공개 evidence review",
+    "개인정보 처리방침 공개 exception approval"
+  ],
+  "required_evidence": [
+    "개인정보 처리방침 공개 정책·절차 문서",
+    "개인정보 처리방침 공개 운영 이행 기록",
+    "개인정보 처리방침 공개 정기 검토 및 개선 기록",
+    "정보주체 권리 요청 및 처리 기록",
+    "개인정보 처리방침 공개 및 변경 이력"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-3.5.1.isms-p-3-5-1-001",
+      "control_id": "ISMS-P-3.5.1",
+      "title": "개인정보 처리방침 공개 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.5.1-001"
+        },
+        {
+          "sourcePath": "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.5.1.isms-p-3-5-1-002",
+      "control_id": "ISMS-P-3.5.1",
+      "title": "개인정보 처리방침 공개 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.5.1-002"
+        },
+        {
+          "sourcePath": "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.5.1.isms-p-3-5-1-003",
+      "control_id": "ISMS-P-3.5.1",
+      "title": "개인정보 처리방침 공개 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.5.1-003"
+        },
+        {
+          "sourcePath": "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.5.1.isms-p-3-5-1-004",
+      "control_id": "ISMS-P-3.5.1",
+      "title": "정보주체 권리 요청 및 처리 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "privacy_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.5.1-004"
+        },
+        {
+          "sourcePath": "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.5.1.isms-p-3-5-1-005",
+      "control_id": "ISMS-P-3.5.1",
+      "title": "개인정보 처리방침 공개 및 변경 이력",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "privacy_policy"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.5.1-005"
+        },
+        {
+          "sourcePath": "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "개인정보 처리방침 공개 evidence exists but has no owner",
+    "개인정보 처리방침 공개 settings are captured once but not reviewed",
+    "개인정보 처리방침 공개 exceptions are handled informally"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-3.5.1"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-3.5.1-001, EV-ISMS-P-3.5.1-002, EV-ISMS-P-3.5.1-003, EV-ISMS-P-3.5.1-004, EV-ISMS-P-3.5.1-005"
+    },
+    {
+      "sourcePath": "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-3.5.1 개인정보 처리방침 공개"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-3.5.1",
+    "effective_status": "active",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

@@ -4,43 +4,132 @@
   "title": "비밀번호 관리",
   "domain": "보호대책 요구사항",
   "category": "인증 및 권한관리",
-  "requirement": "Password and credential authentication controls must be defined, configured, reviewed, and exception-managed where password-based authentication remains in use.",
-  "intent": "Confirm that password-based authentication is governed by policy, implemented in configuration, and reviewed with exceptions tracked.",
+  "requirement": "비밀번호 관리: 비밀번호 관리 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-2.5.4 비밀번호 관리 using OpenKB-derived evidence requirements.",
   "applicability_questions": [
-    "Does the service or an administrator path allow password-based login or fallback credentials?",
-    "Are password requirements, reset flows, temporary passwords, or credential recovery paths present?",
-    "Are password policy exceptions reviewed when SSO, OAuth, or MFA changes reduce direct password use?"
+    "Does the service operate systems or data flows covered by 비밀번호 관리?",
+    "Is there an owner for reviewing 비밀번호 관리 evidence?"
   ],
   "observable_signals": [
-    "password policy",
-    "password reset",
-    "credential recovery",
-    "temporary password",
-    "minimum length",
-    "lockout",
-    "password history",
-    "oauth fallback",
-    "admin password"
+    "비밀번호 관리",
+    "비밀번호 관리 정책·절차 문서",
+    "비밀번호 관리 운영 이행 기록",
+    "비밀번호 관리 정기 검토 및 개선 기록",
+    "계정·권한·인증 설정 및 검토 기록",
+    "policy",
+    "record",
+    "review_record",
+    "system_config"
   ],
   "required_operating_practices": [
-    "password policy ownership and review cycle",
-    "password configuration and recovery flow review",
-    "temporary or fallback credential exception approval",
-    "privileged password or break-glass credential review",
-    "periodic password-control effectiveness review"
+    "비밀번호 관리 policy ownership and review cycle",
+    "비밀번호 관리 evidence review",
+    "비밀번호 관리 exception approval"
   ],
   "required_evidence": [
-    "password management policy or procedure",
-    "password and credential configuration export",
-    "password reset or recovery flow review record",
-    "temporary credential exception register",
-    "periodic password-control review record"
+    "비밀번호 관리 정책·절차 문서",
+    "비밀번호 관리 운영 이행 기록",
+    "비밀번호 관리 정기 검토 및 개선 기록",
+    "계정·권한·인증 설정 및 검토 기록"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.5.4.isms-p-2-5-4-001",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "비밀번호 관리 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.4.isms-p-2-5-4-002",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "비밀번호 관리 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.4.isms-p-2-5-4-003",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "비밀번호 관리 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-003"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.4.isms-p-2-5-4-004",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "계정·권한·인증 설정 및 검토 기록",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "system_config"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    }
   ],
   "common_defects": [
-    "password controls are assumed unnecessary because OAuth or SSO exists but fallback paths remain",
-    "temporary credentials are issued without expiry or approval evidence",
-    "password reset flows are implemented but not reviewed as an authentication control",
-    "administrator password or break-glass credentials are not separately reviewed"
+    "비밀번호 관리 evidence exists but has no owner",
+    "비밀번호 관리 settings are captured once but not reviewed",
+    "비밀번호 관리 exceptions are handled informally"
   ],
   "automation_potential": "partial",
   "human_review_required": true,
@@ -71,83 +160,7 @@
     "source_of_truth": "openkb",
     "openkb_control_id": "ISMS-P-2.5.4",
     "effective_status": "active",
-    "review_status": "reviewed",
+    "review_status": "needs_human_review",
     "source_confidence": "ocr_derived"
-  },
-  "requirements": [
-    {
-      "requirement_id": "ISMS-P-2.5.4.password-policy",
-      "control_id": "ISMS-P-2.5.4",
-      "title": "Password management policy defines password, reset, recovery, and exception requirements",
-      "kind": "policy",
-      "required": true,
-      "evidence_types": [
-        "policy_document",
-        "procedure_document"
-      ],
-      "review_frequency": "annual",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.5.4-001"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
-        }
-      ]
-    },
-    {
-      "requirement_id": "ISMS-P-2.5.4.password-configuration",
-      "control_id": "ISMS-P-2.5.4",
-      "title": "Password configuration evidence covers active password, reset, recovery, fallback, and lockout controls",
-      "kind": "configuration",
-      "required": true,
-      "evidence_types": [
-        "configuration_export",
-        "connector_snapshot",
-        "system_export"
-      ],
-      "review_frequency": "quarterly",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.5.4-002, EV-ISMS-P-2.5.4-004"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
-        }
-      ]
-    },
-    {
-      "requirement_id": "ISMS-P-2.5.4.password-review-record",
-      "control_id": "ISMS-P-2.5.4",
-      "title": "Password-control review records show periodic review, exceptions, and remediation follow-up",
-      "kind": "operation_record",
-      "required": true,
-      "evidence_types": [
-        "review_record",
-        "exception_register",
-        "audit_log"
-      ],
-      "review_frequency": "quarterly",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.5.4-003, EV-ISMS-P-2.5.4-004"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
-        }
-      ]
-    }
-  ]
+  }
 }

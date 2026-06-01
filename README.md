@@ -250,16 +250,19 @@ Public examples in this repository must be synthetic or explicitly redacted. Do 
 
 ## Control Knowledge Pack v0
 
-The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes eleven controls.
+The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes 88 public controls.
+
+The first public expansion covers OpenKB annex 7-2 controls whose status is `유지` or `삭제`: 57 active controls and 31 deleted residual-risk controls. `완화` and `병합` controls are intentionally deferred until their status semantics and merge mappings are designed.
 
 The direct pack sources are OpenKB `compiled/controls`, `compiled/citations`, `compiled/evidence`, and public `wiki` notes. Raw legal profile rows such as `raw/legal/7의2...` are kept only as source-profile cross-check references because their numbering can differ from the compiled OpenKB control IDs.
 
-- `ISMS-P-2.5.1 사용자 계정 관리`
-- `ISMS-P-2.5.2 사용자 식별`
+Representative included controls:
+
+- `ISMS-P-1.1.1 경영진의 참여`
 - `ISMS-P-2.5.3 사용자 인증`
-- `ISMS-P-2.5.4 비밀번호 관리`
-- `ISMS-P-2.5.6 접근권한 검토`
+- `ISMS-P-2.5.6 접근권한 검토` as deleted residual risk
 - `ISMS-P-2.10.2 클라우드 보안`
+- `ISMS-P-3.5.3 정보주체에 대한 통지`
 
 Contributors can improve reviewed controls through source-traceable pull requests. See [docs/control-pack-contributions.md](docs/control-pack-contributions.md) for source reference rules, judgment-basis discipline, and validation commands.
 
@@ -271,10 +274,12 @@ Maintainers can generate a draft pack from a local OpenKB root:
 ismsp pack generate \
   --openkb /path/to/09_보안_ISMS-P_openkb \
   --pack packs/isms-p-core-v1 \
-  --controls ISMS-P-2.5.3,ISMS-P-2.5.6
+  --controls @annex-7-2-supported
 
 ismsp pack validate packs/isms-p-core-v1
 ```
+
+`@annex-7-2-supported` selects non-merged annex 7-2 rows whose status is `유지` or `삭제`. Use an explicit comma-separated control list when testing a small subset.
 
 Generated packs are draft knowledge. Every generated control starts with `review_status: needs_human_review`, uses compiled/wiki OpenKB sources as direct source refs, and keeps `raw/legal/*` rows as cross-check references only.
 

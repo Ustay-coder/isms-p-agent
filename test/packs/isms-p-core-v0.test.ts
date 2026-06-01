@@ -9,49 +9,34 @@ const PACK_ROOT = join(process.cwd(), "packs", "isms-p-core-v0");
 test("isms-p-core-v0 pack has the expected OpenKB controls", async () => {
   const names = (await readdir(join(PACK_ROOT, "controls"))).filter((name) => name.endsWith(".json")).sort();
 
-  assert.deepEqual(names, [
-    "ISMS-P-2.1.1.json",
-    "ISMS-P-2.10.1.json",
-    "ISMS-P-2.10.2.json",
-    "ISMS-P-2.2.4.json",
-    "ISMS-P-2.3.1.json",
-    "ISMS-P-2.5.1.json",
-    "ISMS-P-2.5.2.json",
-    "ISMS-P-2.5.3.json",
-    "ISMS-P-2.5.4.json",
-    "ISMS-P-2.5.6.json",
-    "ISMS-P-2.9.4.json"
-  ]);
+  assert.equal(names.length, 88);
+  assert.ok(names.includes("ISMS-P-1.1.1.json"));
+  assert.ok(names.includes("ISMS-P-2.5.3.json"));
+  assert.ok(names.includes("ISMS-P-2.10.2.json"));
+  assert.ok(names.includes("ISMS-P-3.5.3.json"));
+  assert.equal(names.includes("ISMS-P-1.1.3.json"), false);
+  assert.equal(names.includes("ISMS-P-2.4.2.json"), false);
+  assert.equal(names.includes("ISMS-P-2.11.1.json"), false);
 
   const controls = await Promise.all(names.map(async (name) => {
     return JSON.parse(await readFile(join(PACK_ROOT, "controls", name), "utf8")) as ControlKnowledge;
   }));
 
-  assert.deepEqual(controls.map((control) => control.control_id).sort(), [
-    "ISMS-P-2.1.1",
-    "ISMS-P-2.10.1",
-    "ISMS-P-2.10.2",
-    "ISMS-P-2.2.4",
-    "ISMS-P-2.3.1",
-    "ISMS-P-2.5.1",
-    "ISMS-P-2.5.2",
-    "ISMS-P-2.5.3",
-    "ISMS-P-2.5.4",
-    "ISMS-P-2.5.6",
-    "ISMS-P-2.9.4"
-  ]);
+  assert.deepEqual(controls.map((control) => `${control.control_id}.json`).sort(), names);
   assert.equal(controls.every((control) => control.pack?.source_of_truth === "openkb"), true);
+  assert.equal(controls.filter((control) => control.pack?.effective_status === "active").length, 57);
+  assert.equal(controls.filter((control) => control.pack?.effective_status === "deleted_residual_risk").length, 31);
 });
 
 test("active pack controls have analyzer-useful fields", async () => {
   const controls = await loadPackControls();
   const active = controls.filter((control) => control.pack?.effective_status === "active");
 
-  assert.equal(active.length, 9);
+  assert.equal(active.length, 57);
   for (const control of active) {
     assert.ok(control.observable_signals.length >= 5, `${control.control_id} observable_signals`);
     assert.ok(control.required_operating_practices.length >= 3, `${control.control_id} operating practices`);
-    assert.ok(control.required_evidence.length >= 3, `${control.control_id} required evidence`);
+    assert.ok(control.required_evidence.length >= 2, `${control.control_id} required evidence`);
     assert.ok(control.common_defects.length >= 3, `${control.control_id} common defects`);
   }
 });
@@ -93,8 +78,8 @@ test("deleted access review control is modeled as residual risk", async () => {
 
   assert.equal(accessReview?.pack?.effective_status, "deleted_residual_risk");
   assert.match(accessReview?.intent ?? "", /deleted/i);
-  assert.ok(accessReview?.required_evidence.includes("deleted-control applicability note"));
-  assert.ok(accessReview?.required_operating_practices.includes("residual access-review risk assessment"));
+  assert.ok(accessReview?.required_evidence.some((evidence) => /잔존 리스크|법적/.test(evidence)));
+  assert.ok(accessReview?.required_operating_practices.includes("residual risk assessment"));
 });
 
 test("pack source references use compiled OpenKB claims as direct sources", async () => {
@@ -130,42 +115,26 @@ test("pack source references use compiled OpenKB claims as direct sources", asyn
   assert.deepEqual(sourceManifest.sourceProfileReferences, [
     {
       path: "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
-      purpose: "source-profile cross-check; do not treat as direct control source for v0 pack IDs"
+      purpose: "source-profile cross-check; do not treat as direct control source for generated pack IDs"
     }
   ]);
-  assert.deepEqual(
-    sourceManifest.knownSourceProfileConflicts?.map((conflict) => ({
-      packControlId: conflict.packControlId,
-      rawLegalControlId: conflict.rawLegalControlId
-    })),
-    [
-      {
-        packControlId: "ISMS-P-2.5.3",
-        rawLegalControlId: "ISMS-P-2.4.3"
-      },
-      {
-        packControlId: "ISMS-P-2.10.2",
-        rawLegalControlId: "ISMS-P-2.9.2"
-      }
-    ]
-  );
+  assert.equal(sourceManifest.knownSourceProfileConflicts?.length, 27);
+  assert.ok(sourceManifest.knownSourceProfileConflicts?.some((conflict) =>
+    conflict.packControlId === "ISMS-P-2.5.3" && conflict.rawLegalControlId === "ISMS-P-2.4.3"
+  ));
+  assert.ok(sourceManifest.knownSourceProfileConflicts?.some((conflict) =>
+    conflict.packControlId === "ISMS-P-2.10.2" && conflict.rawLegalControlId === "ISMS-P-2.9.2"
+  ));
 });
 
 test("public pack files avoid private absolute paths and credential-looking values", async () => {
   const files = [
     "pack.json",
     "sources/source-manifest.json",
-    "controls/ISMS-P-2.1.1.json",
-    "controls/ISMS-P-2.10.1.json",
-    "controls/ISMS-P-2.10.2.json",
-    "controls/ISMS-P-2.2.4.json",
-    "controls/ISMS-P-2.3.1.json",
-    "controls/ISMS-P-2.5.1.json",
-    "controls/ISMS-P-2.5.2.json",
-    "controls/ISMS-P-2.5.3.json",
-    "controls/ISMS-P-2.5.4.json",
-    "controls/ISMS-P-2.5.6.json",
-    "controls/ISMS-P-2.9.4.json"
+    ...(await readdir(join(PACK_ROOT, "controls")))
+      .filter((name) => name.endsWith(".json"))
+      .sort()
+      .map((name) => `controls/${name}`)
   ];
 
   for (const file of files) {

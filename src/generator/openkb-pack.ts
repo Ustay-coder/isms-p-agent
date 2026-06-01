@@ -2,7 +2,13 @@ import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import { stringifyJson } from "../core/json.js";
 import { readJsonl } from "../core/jsonl.js";
-import type { ControlKnowledge, PackEffectiveStatus, PackSourceConfidence } from "../schemas/control.js";
+import type {
+  ControlKnowledge,
+  ControlRequirement,
+  PackEffectiveStatus,
+  PackSourceConfidence,
+  SourceRef
+} from "../schemas/control.js";
 import type {
   AnnexMappingRow,
   EvidenceRequirementRow,
@@ -16,6 +22,21 @@ const ANNEX_7_2_PATH = "compiled/controls/annex_7_2_mapping.jsonl";
 const SOURCE_CLAIMS_PATH = "compiled/citations/source_claims.jsonl";
 const EVIDENCE_REQUIREMENTS_PATH = "compiled/evidence/evidence_requirements.jsonl";
 const RAW_LEGAL_PROFILE_PATH = "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl";
+export const SUPPORTED_ANNEX_7_2_CONTROLS = "@annex-7-2-supported";
+
+export async function selectSupportedControlIdsFromOpenKb(openkbRoot: string): Promise<string[]> {
+  const annexRows = await readJsonl<AnnexMappingRow>(join(openkbRoot, ANNEX_7_2_PATH));
+  return selectSupportedAnnex72ControlIds(annexRows);
+}
+
+export function selectSupportedAnnex72ControlIds(rows: AnnexMappingRow[]): string[] {
+  return rows
+    .filter((row) => (row.status === "유지" || row.status === "삭제") && !row.merged_into)
+    .map((row) => {
+      assertSupportedControlId(row.control_id);
+      return row.control_id;
+    });
+}
 
 export async function generatePackFromOpenKb(options: GeneratePackOptions): Promise<GeneratePackResult> {
   const annexRows = await readJsonl<AnnexMappingRow>(join(options.openkbRoot, ANNEX_7_2_PATH));
@@ -23,8 +44,11 @@ export async function generatePackFromOpenKb(options: GeneratePackOptions): Prom
   const evidenceRows = await readJsonl<EvidenceRequirementRow>(join(options.openkbRoot, EVIDENCE_REQUIREMENTS_PATH));
   const rawLegalRows = await readOptionalJsonl<RawLegalRow>(join(options.openkbRoot, RAW_LEGAL_PROFILE_PATH));
   const wikiFiles = await findWikiControlFiles(join(options.openkbRoot, "wiki", "controls"));
+  const targetControlIds = options.controlIds.length === 1 && options.controlIds[0] === SUPPORTED_ANNEX_7_2_CONTROLS
+    ? selectSupportedAnnex72ControlIds(annexRows)
+    : options.controlIds;
 
-  const selectedControls = options.controlIds.map((controlId) => {
+  const selectedControls = targetControlIds.map((controlId) => {
     const annex = annexRows.find((row) => row.control_id === controlId);
     if (!annex) {
       throw new Error(`OpenKB annex mapping is missing ${controlId}`);
@@ -107,12 +131,19 @@ function buildControl(input: {
   wikiPath?: string;
   openkbRoot: string;
 }): ControlKnowledge {
-  const annexEffectiveStatus = mapEffectiveStatus(input.annex.status);
-  const effectiveStatus = input.claim?.effective_status
-    ? mapEffectiveStatus(input.claim.effective_status)
-    : annexEffectiveStatus;
-  const evidenceTitles = input.evidence.map((row) => row.title);
+  const effectiveStatus = mapEffectiveStatus(input.annex.status);
+  const evidenceTitles = input.evidence.map((row) => toPublicText(row.title));
   const wikiSourcePath = input.wikiPath ? normalizeOpenKbPath(input.openkbRoot, input.wikiPath) : undefined;
+  const evidenceSourceRef: SourceRef = {
+    sourcePath: EVIDENCE_REQUIREMENTS_PATH,
+    sha256: "openkb-managed",
+    excerpt: input.evidence.map((row) => row.evidence_id).join(", ")
+  };
+  const wikiSourceRef: SourceRef | undefined = wikiSourcePath ? {
+    sourcePath: wikiSourcePath,
+    sha256: "openkb-managed",
+    excerpt: `${input.annex.control_id} ${input.annex.control_name}`
+  } : undefined;
 
   return {
     schemaVersion: 1,
@@ -126,6 +157,7 @@ function buildControl(input: {
     observable_signals: buildObservableSignals(input.annex, input.evidence),
     required_operating_practices: buildOperatingPractices(input.annex, effectiveStatus),
     required_evidence: evidenceTitles.length > 0 ? evidenceTitles : [`${input.annex.control_name} 검토 기록`],
+    requirements: buildControlRequirements(input.annex, input.evidence, wikiSourceRef),
     common_defects: buildCommonDefects(input.annex, effectiveStatus),
     automation_potential: input.evidence.some((row) => row.automation_candidate) ? "partial" : "none",
     human_review_required: true,
@@ -140,16 +172,8 @@ function buildControl(input: {
         sha256: "openkb-managed",
         excerpt: input.claim.claim_id
       }] : []),
-      ...(input.evidence.length > 0 ? [{
-        sourcePath: EVIDENCE_REQUIREMENTS_PATH,
-        sha256: "openkb-managed",
-        excerpt: input.evidence.map((row) => row.evidence_id).join(", ")
-      }] : []),
-      ...(wikiSourcePath ? [{
-        sourcePath: wikiSourcePath,
-        sha256: "openkb-managed",
-        excerpt: `${input.annex.control_id} ${input.annex.control_name}`
-      }] : [])
+      ...(input.evidence.length > 0 ? [evidenceSourceRef] : []),
+      ...(wikiSourceRef ? [wikiSourceRef] : [])
     ],
     pack: {
       name: input.packName,
@@ -160,6 +184,85 @@ function buildControl(input: {
       source_confidence: mapSourceConfidence(input.claim?.confidence)
     }
   } as ControlKnowledge;
+}
+
+function buildControlRequirements(
+  annex: AnnexMappingRow,
+  evidence: EvidenceRequirementRow[],
+  wikiSourceRef?: SourceRef
+): ControlRequirement[] {
+  return evidence.map((row) => ({
+    requirement_id: `${annex.control_id}.${slugRequirementId(row.evidence_id)}`,
+    control_id: annex.control_id,
+    title: toPublicText(row.title),
+    kind: mapRequirementKind(row.evidence_type),
+    required: true,
+    evidence_types: unique([row.evidence_type]),
+    review_frequency: mapReviewFrequency(row.refresh_cycle),
+    source_refs: [
+      {
+        sourcePath: EVIDENCE_REQUIREMENTS_PATH,
+        sha256: "openkb-managed",
+        excerpt: row.evidence_id
+      },
+      ...(wikiSourceRef ? [wikiSourceRef] : [])
+    ]
+  }));
+}
+
+function slugRequirementId(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/^ev-/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function mapRequirementKind(evidenceType: string): ControlRequirement["kind"] {
+  if (evidenceType === "system_config" || evidenceType === "system_export") {
+    return "configuration";
+  }
+  if (evidenceType === "code_reference") {
+    return "implementation";
+  }
+  if (evidenceType === "log") {
+    return "log";
+  }
+  if (
+    evidenceType === "contract" ||
+    evidenceType === "crosswalk" ||
+    evidenceType === "mapping" ||
+    evidenceType === "privacy_contract" ||
+    evidenceType === "scope_statement"
+  ) {
+    return "applicability";
+  }
+  if (evidenceType === "policy" || evidenceType === "privacy_policy" || evidenceType === "procedure") {
+    return "policy";
+  }
+  return "operation_record";
+}
+
+function mapReviewFrequency(refreshCycle: string | undefined): ControlRequirement["review_frequency"] | undefined {
+  if (!refreshCycle) {
+    return undefined;
+  }
+  if (refreshCycle.includes("on_change")) {
+    return "per_change";
+  }
+  if (refreshCycle.includes("monthly")) {
+    return "monthly";
+  }
+  if (refreshCycle.includes("quarterly")) {
+    return "quarterly";
+  }
+  if (refreshCycle.includes("semiannual")) {
+    return "semiannual";
+  }
+  if (refreshCycle.includes("annual")) {
+    return "annual";
+  }
+  return undefined;
 }
 
 function mapEffectiveStatus(status: string): PackEffectiveStatus {
@@ -181,7 +284,7 @@ function mapSourceConfidence(confidence: string | undefined): PackSourceConfiden
 
 function buildRequirement(annex: AnnexMappingRow, evidence: EvidenceRequirementRow[]): string {
   const firstCriterion = evidence[0]?.acceptance_criteria;
-  return firstCriterion ? `${annex.control_name}: ${firstCriterion}` : `${annex.control_name} 요구사항은 OpenKB 검토가 필요하다.`;
+  return firstCriterion ? `${annex.control_name}: ${toPublicText(firstCriterion)}` : `${annex.control_name} 요구사항은 OpenKB 검토가 필요하다.`;
 }
 
 function buildIntent(annex: AnnexMappingRow, status: PackEffectiveStatus): string {
@@ -207,7 +310,7 @@ function buildApplicabilityQuestions(annex: AnnexMappingRow, status: PackEffecti
 function buildObservableSignals(annex: AnnexMappingRow, evidence: EvidenceRequirementRow[]): string[] {
   return unique([
     annex.control_name,
-    ...evidence.map((row) => row.title),
+    ...evidence.map((row) => toPublicText(row.title)),
     ...evidence.map((row) => row.evidence_type)
   ]);
 }
@@ -313,6 +416,12 @@ async function readOptionalJsonl<T>(path: string): Promise<T[]> {
 
 function normalizeOpenKbPath(openkbRoot: string, path: string): string {
   return relative(openkbRoot, path).split("\\").join("/");
+}
+
+function toPublicText(value: string): string {
+  return value
+    .replace(/evaluate\.club/g, "the target service")
+    .replace(/\/Users\/[^\s"']+/g, "local private path");
 }
 
 function unique(values: string[]): string[] {

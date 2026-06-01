@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { copyFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
-import { generatePackFromOpenKb } from "../generator/openkb-pack.js";
+import { generatePackFromOpenKb, selectSupportedControlIdsFromOpenKb, SUPPORTED_ANNEX_7_2_CONTROLS } from "../generator/openkb-pack.js";
 import type { GeneratePackResult } from "../generator/openkb-types.js";
 import type { ControlKnowledge, SourceRef } from "../schemas/control.js";
 
@@ -9,6 +9,7 @@ const RAW_LEGAL_PROFILE = "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jso
 const PUBLIC_PACK_FORBIDDEN_PATTERNS = [
   { label: "private absolute path", pattern: /\/Users\// },
   { label: "private service path", pattern: /apps\/evaluation/ },
+  { label: "private service hostname", pattern: /evaluate\.club/ },
   { label: "private overlay path", pattern: /overlays\/evaluate-club/ },
   { label: "private asset-map reference", pattern: /evaluate\.club asset map/ },
   {
@@ -81,12 +82,17 @@ export function parsePackGenerateArgs(args: string[]): PackGenerateCliOptions | 
 
 export async function generatePack(options: PackGenerateCliOptions): Promise<GeneratePackResult> {
   const packRoot = resolve(process.cwd(), options.packRoot);
+  const openkbRoot = resolve(process.cwd(), options.openkbRoot);
+  const controlIds = options.controlIds.length === 1 && options.controlIds[0] === SUPPORTED_ANNEX_7_2_CONTROLS
+    ? await selectSupportedControlIdsFromOpenKb(openkbRoot)
+    : options.controlIds;
+
   return generatePackFromOpenKb({
-    openkbRoot: resolve(process.cwd(), options.openkbRoot),
+    openkbRoot,
     packRoot,
     packName: basename(packRoot),
     version: options.version,
-    controlIds: options.controlIds
+    controlIds
   });
 }
 
@@ -249,12 +255,51 @@ function validateControl(
     issues.push(`${controlId} must cite compiled OpenKB or wiki sources`);
   }
 
+  validateControlRequirements(controlId, control, issues);
+
   if (control.pack?.effective_status === "deleted_residual_risk") {
     if (!control.human_review_required) {
       issues.push(`${controlId} deleted residual-risk controls must require human review`);
     }
     if (!control.required_operating_practices.some((practice) => /residual|deleted/i.test(practice))) {
       issues.push(`${controlId} deleted residual-risk controls must preserve residual-risk operating practice`);
+    }
+  }
+}
+
+function validateControlRequirements(controlId: string, control: ControlKnowledge, issues: string[]): void {
+  if (!Array.isArray(control.requirements) || control.requirements.length === 0) {
+    issues.push(`${controlId} must include requirement-level evidence mappings`);
+    return;
+  }
+
+  for (const requirement of control.requirements) {
+    const requirementId = requirement.requirement_id || `${controlId}.unknown-requirement`;
+
+    if (requirement.control_id !== control.control_id) {
+      issues.push(`${requirementId} requirement.control_id must match ${controlId}`);
+    }
+    if (!requirement.requirement_id?.startsWith(`${controlId}.`)) {
+      issues.push(`${requirementId} requirement_id must start with ${controlId}.`);
+    }
+    if (!requirement.title?.trim()) {
+      issues.push(`${requirementId} must include a title`);
+    }
+    if (typeof requirement.required !== "boolean") {
+      issues.push(`${requirementId} must declare whether the requirement is required`);
+    }
+    if (!Array.isArray(requirement.evidence_types) || requirement.evidence_types.length === 0) {
+      issues.push(`${requirementId} must include evidence_types`);
+    }
+    if (!Array.isArray(requirement.source_refs) || requirement.source_refs.length === 0) {
+      issues.push(`${requirementId} must include source_refs`);
+      continue;
+    }
+    if (requirement.source_refs.some(isRawLegalProfileSourceRef)) {
+      issues.push(`${requirementId} must not cite raw legal profile rows as direct source_refs`);
+    }
+    if (!requirement.source_refs.some((sourceRef) => sourceRef.sourcePath.startsWith("compiled/") || sourceRef.sourcePath.startsWith("wiki/"))) {
+      issues.push(`${requirementId} must cite compiled OpenKB or wiki sources`);
     }
   }
 }
