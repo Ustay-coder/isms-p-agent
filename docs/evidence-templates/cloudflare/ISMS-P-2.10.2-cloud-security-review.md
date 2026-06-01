@@ -36,7 +36,7 @@ Public exports may state that a private Cloudflare security review exists, the r
 After the private review is complete, record the decision with:
 
 ```bash
-isms-agent evidence review <evidence-id> \
+ismsp evidence review <evidence-id> \
   --requirement ISMS-P-2.10.2.cloudflare-config-export \
   --decision accepted \
   --private-evidence evidence/private/ISMS-P-2.10.2/security-review/<record-file> \

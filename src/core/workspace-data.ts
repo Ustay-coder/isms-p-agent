@@ -9,7 +9,7 @@ export async function loadControls(workspaceRoot: string): Promise<ControlKnowle
   const controlsDir = join(workspaceRoot, "controls");
   const names = await jsonFileNames(controlsDir);
   if (names.length === 0) {
-    throw new Error("No control JSON files found in controls/. Run isms-agent ingest before report.");
+    throw new Error("No control JSON files found in controls/. Run ismsp ingest before report.");
   }
 
   const controls = [];
@@ -24,7 +24,7 @@ export async function loadLatestScan(workspaceRoot: string): Promise<ScanResult>
   const scansDir = join(workspaceRoot, "scans");
   const names = await jsonFileNames(scansDir);
   if (names.length === 0) {
-    throw new Error("No scan JSON files found in scans/. Run isms-agent scan before report.");
+    throw new Error("No scan JSON files found in scans/. Run ismsp scan before report.");
   }
 
   const scanFiles = [];
@@ -48,7 +48,7 @@ export async function loadLatestScan(workspaceRoot: string): Promise<ScanResult>
 
   const latest = scanFiles.at(-1);
   if (!latest) {
-    throw new Error("No scan JSON files found in scans/. Run isms-agent scan before report.");
+    throw new Error("No scan JSON files found in scans/. Run ismsp scan before report.");
   }
 
   return latest.scan;

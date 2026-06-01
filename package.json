@@ -6,6 +6,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
+    "ismsp": "./dist/cli.js",
     "isms-agent": "./dist/cli.js"
   },
   "scripts": {

@@ -22,15 +22,15 @@ Cloudflare API tokens must be supplied through `CLOUDFLARE_API_TOKEN`. The token
 
 ## Private Evidence Boundary
 
-Scanner output is not evidence acceptance. `isms-agent evidence index` turns scan signals into candidate evidence IDs, and `isms-agent evidence review` records human decisions in `reviews/evidence-review.jsonl`.
+Scanner output is not evidence acceptance. `ismsp evidence index` turns scan signals into candidate evidence IDs, and `ismsp evidence review` records human decisions in `reviews/evidence-review.jsonl`.
 
-`isms-agent evidence review-cloudflare` is a local-only bulk review overlay for Cloudflare scanner evidence. It reads `evidence/index.jsonl`, writes append-only records to `reviews/evidence-review.jsonl`, and does not call Cloudflare APIs. Bulk Cloudflare review may write `needs_followup` or explicit `rejected` decisions, but it must not write `accepted`; accepted decisions require a separate manual review of operating evidence.
+`ismsp evidence review-cloudflare` is a local-only bulk review overlay for Cloudflare scanner evidence. It reads `evidence/index.jsonl`, writes append-only records to `reviews/evidence-review.jsonl`, and does not call Cloudflare APIs. Bulk Cloudflare review may write `needs_followup` or explicit `rejected` decisions, but it must not write `accepted`; accepted decisions require a separate manual review of operating evidence.
 
 Accepted Cloudflare operating evidence must come from manual private-record review, not from scanner output alone. The templates under `docs/evidence-templates/cloudflare/` define the accepted criteria, private storage location, and public export rule for Cloudflare access review, change approval, and security review evidence before a human owner records an accepted decision.
 
 Accepted review decisions require `--private-evidence <path>`, and that path must exist under `evidence/private/`. Review records store only the workspace-relative private path, and public reports omit private evidence paths and review rationale.
 
-`isms-agent evidence add` registers existing private operating evidence as public-safe metadata. The command requires `--private-evidence evidence/private/...` to exist, but it does not store that path in `evidence/index.jsonl`. The private path is recorded only in an accepted review overlay, and public report/export paths omit it.
+`ismsp evidence add` registers existing private operating evidence as public-safe metadata. The command requires `--private-evidence evidence/private/...` to exist, but it does not store that path in `evidence/index.jsonl`. The private path is recorded only in an accepted review overlay, and public report/export paths omit it.
 
 Evidence index locators should remain public-safe references. Do not put `evidence/private/...` paths in `evidence/index.jsonl`; use `--private-evidence` on the accepted review record instead.
 
@@ -41,7 +41,7 @@ The default workspace keeps real evidence local:
 - `scans/` for connector and local scan outputs,
 - `reports/` for private reports.
 
-These paths are ignored by default. Public artifacts should be produced through `isms-agent report --public`, `isms-agent evidence export-public`, and `isms-agent evidence validate --public`.
+These paths are ignored by default. Public artifacts should be produced through `ismsp report --public`, `ismsp evidence export-public`, and `ismsp evidence validate --public`.
 
 ## No Customer Or Personal Data Collection
 

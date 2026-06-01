@@ -9,7 +9,7 @@ export interface AskContextOptions {
 export async function buildAskContext(workspaceRoot: string, question: string): Promise<AskContextBundle> {
   const trimmed = question.trim();
   if (!trimmed) {
-    throw new Error("Question is required. Usage: isms-agent ask-context <question> [--json] [--markdown]");
+    throw new Error("Question is required. Usage: ismsp ask-context <question> [--json] [--markdown]");
   }
 
   return buildAskContextBundle(workspaceRoot, trimmed);

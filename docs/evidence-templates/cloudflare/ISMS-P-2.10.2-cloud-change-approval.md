@@ -36,7 +36,7 @@ Public exports may state that private Cloudflare change approval evidence exists
 After the private review is complete, record the decision with:
 
 ```bash
-isms-agent evidence review <evidence-id> \
+ismsp evidence review <evidence-id> \
   --requirement ISMS-P-2.10.2.cloud-change-approval \
   --decision accepted \
   --private-evidence evidence/private/ISMS-P-2.10.2/change-approval/<record-file> \

@@ -9,7 +9,7 @@ The API surface below was rechecked against Cloudflare official API documentatio
 Pass the token through `CLOUDFLARE_API_TOKEN` only:
 
 ```bash
-CLOUDFLARE_API_TOKEN=... isms-agent scan \
+CLOUDFLARE_API_TOKEN=... ismsp scan \
   --cloudflare example.com \
   --cloudflare-account <account_id> \
   --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
@@ -75,9 +75,9 @@ They must not contain resource identifiers that disclose infrastructure shape. I
 Public exports must be generated through:
 
 ```bash
-isms-agent report --public
-isms-agent evidence export-public
-isms-agent evidence validate --public
+ismsp report --public
+ismsp evidence export-public
+ismsp evidence validate --public
 ```
 
 `evidence validate --public` is the release gate. A successful scan is only candidate evidence; a human review decision is still required before using it for certification readiness.
@@ -87,7 +87,7 @@ isms-agent evidence validate --public
 For a service copied into an ISMS-P workspace, run the scanner against a target directory such as `project/sample-service`:
 
 ```bash
-isms-agent scan \
+ismsp scan \
   --local \
   --target project/sample-service \
   --include app,services,db,lib,specs,wrangler.toml \
@@ -107,9 +107,9 @@ Expected safe failure modes:
 After the scan:
 
 ```bash
-isms-agent evidence index
-isms-agent report --public
-isms-agent evidence validate --public
+ismsp evidence index
+ismsp report --public
+ismsp evidence validate --public
 ```
 
 Review the generated warnings. Warnings about missing human review decisions are acceptable in dry-run mode, but they must be resolved before treating the evidence as certification-ready.

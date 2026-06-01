@@ -32,11 +32,14 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Link CLI
+        run: npm link
+
       - name: Public safety scan
         run: npm run scan:public
 
       - name: Validate public control pack
-        run: node dist/cli.js pack validate packs/isms-p-core-v0
+        run: ismsp pack validate packs/isms-p-core-v0
 
       - name: Validate public evidence posture
-        run: node dist/cli.js evidence validate --public
+        run: ismsp evidence validate --public
