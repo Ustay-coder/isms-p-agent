@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.1.2",
+  "title": "조직의 유지관리",
+  "domain": "보호대책 요구사항",
+  "category": "정책·조직·자산 관리",
+  "requirement": "조직의 유지관리: 조직의 유지관리 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Preserve traceability for deleted control ISMS-P-2.1.2 조직의 유지관리 and require residual-risk review before treating it as not applicable.",
+  "applicability_questions": [
+    "Does 조직의 유지관리 remain relevant through contracts, privacy obligations, or customer security requirements?",
+    "Has a human owner confirmed the deleted-control residual risk?"
+  ],
+  "observable_signals": [
+    "조직의 유지관리",
+    "조직의 유지관리 정책·절차 문서",
+    "조직의 유지관리 운영 이행 기록",
+    "조직의 유지관리 정기 검토 및 개선 기록",
+    "policy",
+    "record",
+    "review_record"
+  ],
+  "required_operating_practices": [
+    "deleted-control decision review",
+    "residual risk assessment",
+    "human confirmation before treating the control as not applicable"
+  ],
+  "required_evidence": [
+    "조직의 유지관리 정책·절차 문서",
+    "조직의 유지관리 운영 이행 기록",
+    "조직의 유지관리 정기 검토 및 개선 기록"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.1.2.isms-p-2-1-2-001",
+      "control_id": "ISMS-P-2.1.2",
+      "title": "조직의 유지관리 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.1.2-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.2_조직의_유지관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.1.2 조직의 유지관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.1.2.isms-p-2-1-2-002",
+      "control_id": "ISMS-P-2.1.2",
+      "title": "조직의 유지관리 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.1.2-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.2_조직의_유지관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.1.2 조직의 유지관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.1.2.isms-p-2-1-2-003",
+      "control_id": "ISMS-P-2.1.2",
+      "title": "조직의 유지관리 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.1.2-003"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.2_조직의_유지관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.1.2 조직의 유지관리"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "treating the deleted control as if no residual risk exists",
+    "creating a normal remediation gap from a deleted control",
+    "missing human confirmation for deleted-control applicability"
+  ],
+  "automation_potential": "none",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.1.2 조직의 유지관리 status 삭제"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.1.2"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.1.2-001, EV-ISMS-P-2.1.2-002, EV-ISMS-P-2.1.2-003"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.2_조직의_유지관리.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.1.2 조직의 유지관리"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.1.2",
+    "effective_status": "deleted_residual_risk",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

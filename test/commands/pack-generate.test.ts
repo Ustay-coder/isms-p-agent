@@ -38,6 +38,37 @@ test("CLI generates a pack from fixture OpenKB inputs", async () => {
   }
 });
 
+test("CLI generates supported annex 7-2 controls from fixture OpenKB inputs", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-cli-pack-generate-supported-"));
+  try {
+    const openkbRoot = join(process.cwd(), "test", "fixtures", "openkb");
+    const packRoot = join(dir, "generated-pack");
+    const result = spawnSync(process.execPath, [
+      join(process.cwd(), "dist", "cli.js"),
+      "pack",
+      "generate",
+      "--openkb",
+      openkbRoot,
+      "--pack",
+      packRoot,
+      "--controls",
+      "@annex-7-2-supported"
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, "");
+
+    const pack = JSON.parse(await readFile(join(packRoot, "pack.json"), "utf8"));
+    assert.equal(pack.controlCount, 2);
+    assert.deepEqual(pack.controls, ["ISMS-P-2.5.3", "ISMS-P-2.5.6"]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("CLI rejects incomplete pack generate arguments", () => {
   const result = spawnSync(process.execPath, [
     join(process.cwd(), "dist", "cli.js"),

@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-1.2.2",
+  "title": "현황 및 흐름분석",
+  "domain": "관리체계 수립 및 운영",
+  "category": "위험 관리",
+  "requirement": "현황 및 흐름분석: 현황 및 흐름분석 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Preserve traceability for deleted control ISMS-P-1.2.2 현황 및 흐름분석 and require residual-risk review before treating it as not applicable.",
+  "applicability_questions": [
+    "Does 현황 및 흐름분석 remain relevant through contracts, privacy obligations, or customer security requirements?",
+    "Has a human owner confirmed the deleted-control residual risk?"
+  ],
+  "observable_signals": [
+    "현황 및 흐름분석",
+    "현황 및 흐름분석 정책·절차 문서",
+    "현황 및 흐름분석 운영 이행 기록",
+    "현황 및 흐름분석 정기 검토 및 개선 기록",
+    "정보자산 및 위험평가 원장",
+    "policy",
+    "record",
+    "review_record",
+    "register"
+  ],
+  "required_operating_practices": [
+    "deleted-control decision review",
+    "residual risk assessment",
+    "human confirmation before treating the control as not applicable"
+  ],
+  "required_evidence": [
+    "현황 및 흐름분석 정책·절차 문서",
+    "현황 및 흐름분석 운영 이행 기록",
+    "현황 및 흐름분석 정기 검토 및 개선 기록",
+    "정보자산 및 위험평가 원장"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-1.2.2.isms-p-1-2-2-001",
+      "control_id": "ISMS-P-1.2.2",
+      "title": "현황 및 흐름분석 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.2.2-001"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.2_현황_및_흐름분석.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.2.2 현황 및 흐름분석"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.2.2.isms-p-1-2-2-002",
+      "control_id": "ISMS-P-1.2.2",
+      "title": "현황 및 흐름분석 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.2.2-002"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.2_현황_및_흐름분석.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.2.2 현황 및 흐름분석"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.2.2.isms-p-1-2-2-003",
+      "control_id": "ISMS-P-1.2.2",
+      "title": "현황 및 흐름분석 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.2.2-003"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.2_현황_및_흐름분석.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.2.2 현황 및 흐름분석"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-1.2.2.isms-p-1-2-2-004",
+      "control_id": "ISMS-P-1.2.2",
+      "title": "정보자산 및 위험평가 원장",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "register"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-1.2.2-004"
+        },
+        {
+          "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.2_현황_및_흐름분석.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-1.2.2 현황 및 흐름분석"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "treating the deleted control as if no residual risk exists",
+    "creating a normal remediation gap from a deleted control",
+    "missing human confirmation for deleted-control applicability"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-1.2.2 현황 및 흐름분석 status 삭제"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-1.2.2"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-1.2.2-001, EV-ISMS-P-1.2.2-002, EV-ISMS-P-1.2.2-003, EV-ISMS-P-1.2.2-004"
+    },
+    {
+      "sourcePath": "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.2_현황_및_흐름분석.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-1.2.2 현황 및 흐름분석"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-1.2.2",
+    "effective_status": "deleted_residual_risk",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

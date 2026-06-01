@@ -1,33 +1,164 @@
 {
   "schemaVersion": 1,
   "sourceOfTruth": "openkb",
-  "openkbRoot": "09_보안_ISMS-P_openkb",
-  "officialFreshnessReference": {
-    "publisher": "KISA",
-    "title": "ISMS-P 세부점검항목 공지('23.10.31)",
-    "url": "https://isms.kisa.or.kr/main/ispims/notice/?boardId=bbs_0000000000000014&cntId=19&mode=view",
-    "publishedAt": "2023-10-31"
-  },
+  "openkbRoot": "openkb-relative",
   "openkbSources": [
     "compiled/controls/annex_7_2_mapping.jsonl",
     "compiled/citations/source_claims.jsonl",
     "compiled/evidence/evidence_requirements.jsonl",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.1_경영진의_참여.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.2_최고_책임자의_지정.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.4_범위_설정.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.1.6_자원_할당.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.1_정보자산_식별.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.2_현황_및_흐름분석.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.3_위험_평가.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.2.4_보호대책_선정.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.3.1_보호대책_구현.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.3.2_보호대책_공유.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.3.3_운영현황_관리.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.4.1_법적_요구사항_준수_검토.md",
+    "wiki/controls/1_관리체계_수립_및_운영/ISMS-P-1.4.2_관리체계_점검.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.1_정책의_유지관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.2_조직의_유지관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.1.3_정보자산_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.1_주요_직무자_지정_및_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.2_직무_분리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.3_보안_서약.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.4_인식제고_및_교육훈련.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.5_퇴직_및_직무_변경_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.2.6_보안_위반_시_조치.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.3.1_외부자_현황_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.3.2_외부자_계약_시_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.3.3_외부자_보안_이행_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.3.4_외부자_계약_변경_및_만료_시_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.3_정보시스템_보호.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.6_반출입_기기_통제.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.7_업무환경_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.1_사용자_계정_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.2_사용자_식별.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.3_사용자_인증.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.5_특수계정_및_권한_관리.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.6_접근권한_검토.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.6.1_네트워크_접근.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.6.2_정보시스템_접근.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.6.3_응용프로그램_접근.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.6.7_인터넷_접속_통제.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.7.1_암호정책_적용.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.8.1_보안요구사항_정의.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.8.2_보안_요구사항_검토_및_시험.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.8.3_시험과_운영_환경_분리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.8.4_시험_데이터_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.8.5_소스_프로그램_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.8.6_운영_환경_이관.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.1_변경_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.2_성능_및_장애관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.3_백업_및_복구관리.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.4_로그_및_접속_기록_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.6_시간_동기화.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.9.7_정보자산의_재사용_및_폐기.md",
     "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
-    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md"
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.3_공개서버_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.4_전자거래_및_핀테크_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.5_정보전송_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.6_업무용_단말기기_보안.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.7_보조저장매체_관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.8_패치관리.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.9_악성코드_통제.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.2_취약점_점검_및_조치.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.3_이상행위_분석_및_모니터링.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.4_사고_대응_훈련_및_개선.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.11.5_사고대응_및_복구.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.12.1_재해_재난_대비_안전조치.md",
+    "wiki/controls/2_보호대책_요구사항/ISMS-P-2.12.2_재해_복구_시험_및_개선.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.1.2_개인정보_수집_제한.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.1.3_주민등록번호_처리_제한.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.1.4_민감정보_및_고유식별정보의_처리_제한.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.1.5_개인정보_간접수집.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.2.1_개인정보_현황관리.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.2.2_개인정보_품질보장.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.2.3_이용자_단말기_접근_보호.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.2.4_개인정보_목적_외_이용_및_제공.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.2.5_가명정보_처리.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.3.1_개인정보_제3자_제공.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.3.2_개인정보_처리_업무_위탁.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.3.3_영업의_양도_등에_따른_개인정보_이전.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.3.4_개인정보_국외이전.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.4.1_개인정보_파기.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.4.2_처리목적_달성_후_보유_시_조치.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.1_개인정보_처리방침_공개.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.2_정보주체_권리보장.md",
+    "wiki/controls/3_개인정보_처리단계별_요구사항/ISMS-P-3.5.3_정보주체에_대한_통지.md"
   ],
   "sourceProfileReferences": [
     {
       "path": "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
-      "purpose": "source-profile cross-check; do not treat as direct control source for v0 pack IDs"
+      "purpose": "source-profile cross-check; do not treat as direct control source for generated pack IDs"
     }
   ],
   "knownSourceProfileConflicts": [
+    {
+      "packControlId": "ISMS-P-1.3.3",
+      "packControlName": "운영현황 관리",
+      "rawLegalControlId": "ISMS-P-1.3.1",
+      "rawLegalControlName": "운영현황 관리"
+    },
+    {
+      "packControlId": "ISMS-P-1.4.2",
+      "packControlName": "관리체계 점검",
+      "rawLegalControlId": "ISMS-P-1.4.1",
+      "rawLegalControlName": "관리체계 점검"
+    },
+    {
+      "packControlId": "ISMS-P-2.2.3",
+      "packControlName": "보안 서약",
+      "rawLegalControlId": "ISMS-P-2.1.1",
+      "rawLegalControlName": "보안 서약"
+    },
+    {
+      "packControlId": "ISMS-P-2.2.4",
+      "packControlName": "인식제고 및 교육훈련",
+      "rawLegalControlId": "ISMS-P-2.1.2",
+      "rawLegalControlName": "인식제고 및 교육훈련"
+    },
+    {
+      "packControlId": "ISMS-P-2.3.2",
+      "packControlName": "외부자 계약 시 보안",
+      "rawLegalControlId": "ISMS-P-2.2.1",
+      "rawLegalControlName": "외부자 계약 시 보안"
+    },
+    {
+      "packControlId": "ISMS-P-2.4.3",
+      "packControlName": "정보시스템 보호",
+      "rawLegalControlId": "ISMS-P-2.3.2",
+      "rawLegalControlName": "정보시스템 보호"
+    },
+    {
+      "packControlId": "ISMS-P-2.4.6",
+      "packControlName": "반출입 기기 통제",
+      "rawLegalControlId": "ISMS-P-2.3.3",
+      "rawLegalControlName": "반출입 기기 통제"
+    },
+    {
+      "packControlId": "ISMS-P-2.4.7",
+      "packControlName": "업무환경 보안",
+      "rawLegalControlId": "ISMS-P-2.3.4",
+      "rawLegalControlName": "업무환경 보안"
+    },
+    {
+      "packControlId": "ISMS-P-2.5.1",
+      "packControlName": "사용자 계정 관리",
+      "rawLegalControlId": "ISMS-P-2.4.1",
+      "rawLegalControlName": "사용자 계정 관리"
+    },
+    {
+      "packControlId": "ISMS-P-2.5.2",
+      "packControlName": "사용자 식별",
+      "rawLegalControlId": "ISMS-P-2.4.2",
+      "rawLegalControlName": "사용자 식별"
+    },
     {
       "packControlId": "ISMS-P-2.5.3",
       "packControlName": "사용자 인증",
@@ -35,10 +166,100 @@
       "rawLegalControlName": "사용자 인증"
     },
     {
+      "packControlId": "ISMS-P-2.5.4",
+      "packControlName": "비밀번호 관리",
+      "rawLegalControlId": "ISMS-P-2.4.4",
+      "rawLegalControlName": "비밀번호 관리"
+    },
+    {
+      "packControlId": "ISMS-P-2.6.1",
+      "packControlName": "네트워크 접근",
+      "rawLegalControlId": "ISMS-P-2.5.1",
+      "rawLegalControlName": "네트워크 접근"
+    },
+    {
+      "packControlId": "ISMS-P-2.6.2",
+      "packControlName": "정보시스템 접근",
+      "rawLegalControlId": "ISMS-P-2.5.2",
+      "rawLegalControlName": "정보시스템 접근"
+    },
+    {
+      "packControlId": "ISMS-P-2.6.7",
+      "packControlName": "인터넷 접속 통제",
+      "rawLegalControlId": "ISMS-P-2.5.4",
+      "rawLegalControlName": "인터넷 접속 통제"
+    },
+    {
+      "packControlId": "ISMS-P-2.7.1",
+      "packControlName": "암호정책 적용",
+      "rawLegalControlId": "ISMS-P-2.6.1",
+      "rawLegalControlName": "암호정책 적용"
+    },
+    {
+      "packControlId": "ISMS-P-2.8.3",
+      "packControlName": "시험과 운영 환경 분리",
+      "rawLegalControlId": "ISMS-P-2.7.2",
+      "rawLegalControlName": "시험과 운영 환경 분리"
+    },
+    {
+      "packControlId": "ISMS-P-2.8.4",
+      "packControlName": "시험 데이터 보안",
+      "rawLegalControlId": "ISMS-P-2.7.3",
+      "rawLegalControlName": "시험 데이터 보안"
+    },
+    {
+      "packControlId": "ISMS-P-2.8.5",
+      "packControlName": "소스 프로그램 관리",
+      "rawLegalControlId": "ISMS-P-2.7.4",
+      "rawLegalControlName": "소스 프로그램 관리"
+    },
+    {
+      "packControlId": "ISMS-P-2.9.3",
+      "packControlName": "백업 및 복구관리",
+      "rawLegalControlId": "ISMS-P-2.8.2",
+      "rawLegalControlName": "백업 및 복구관리"
+    },
+    {
       "packControlId": "ISMS-P-2.10.2",
       "packControlName": "클라우드 보안",
       "rawLegalControlId": "ISMS-P-2.9.2",
       "rawLegalControlName": "클라우드 보안"
+    },
+    {
+      "packControlId": "ISMS-P-2.10.3",
+      "packControlName": "공개서버 보안",
+      "rawLegalControlId": "ISMS-P-2.9.3",
+      "rawLegalControlName": "공개서버 보안"
+    },
+    {
+      "packControlId": "ISMS-P-2.10.6",
+      "packControlName": "업무용 단말기기 보안",
+      "rawLegalControlId": "ISMS-P-2.9.4",
+      "rawLegalControlName": "업무용 단말기기 보안"
+    },
+    {
+      "packControlId": "ISMS-P-2.10.7",
+      "packControlName": "보조저장매체 관리",
+      "rawLegalControlId": "ISMS-P-2.9.5",
+      "rawLegalControlName": "보조저장매체 관리"
+    },
+    {
+      "packControlId": "ISMS-P-2.10.8",
+      "packControlName": "패치관리",
+      "rawLegalControlId": "ISMS-P-2.9.6",
+      "rawLegalControlName": "패치관리"
+    },
+    {
+      "packControlId": "ISMS-P-2.10.9",
+      "packControlName": "악성코드 통제",
+      "rawLegalControlId": "ISMS-P-2.9.7",
+      "rawLegalControlName": "악성코드 통제"
+    },
+    {
+      "packControlId": "ISMS-P-2.11.2",
+      "packControlName": "취약점 점검 및 조치",
+      "rawLegalControlId": "ISMS-P-2.10.2",
+      "rawLegalControlName": "취약점 점검 및 조치"
     }
   ],
   "privateOverlaysIncluded": false

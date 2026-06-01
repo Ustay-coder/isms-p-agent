@@ -4,47 +4,157 @@
   "title": "클라우드 보안",
   "domain": "보호대책 요구사항",
   "category": "시스템 및 서비스 보안관리",
-  "requirement": "Cloud service use must define responsibility, secure configuration, restricted administrator access, monitoring, and periodic review to reduce unauthorized access or configuration-error exposure.",
-  "intent": "Confirm that cloud use has defined responsibility, secure configuration, restricted administrator access, monitoring, and periodic review.",
+  "requirement": "클라우드 보안: 클라우드 보안 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-2.10.2 클라우드 보안 using OpenKB-derived evidence requirements.",
   "applicability_questions": [
-    "Does the service use Cloudflare, Vercel, managed storage, workers, queues, or other cloud services?",
-    "Can cloud administrators change security-sensitive settings?",
-    "Are cloud security settings reviewed after changes or on a recurring cycle?"
+    "Does the service operate systems or data flows covered by 클라우드 보안?",
+    "Is there an owner for reviewing 클라우드 보안 evidence?"
   ],
   "observable_signals": [
-    "cloudflare",
-    "worker",
-    "r2",
-    "queue",
-    "binding",
-    "tls",
-    "waf",
-    "dns",
-    "vercel project",
-    "deployment protection",
-    "cloud administrator",
-    "cloud setting review"
+    "클라우드 보안",
+    "클라우드 보안 정책·절차 문서",
+    "클라우드 보안 운영 이행 기록",
+    "클라우드 보안 정기 검토 및 개선 기록",
+    "클라우드·서버·단말·패치·악성코드 보안 설정",
+    "Cloudflare 보안 설정 및 비밀 관리 근거",
+    "policy",
+    "record",
+    "review_record",
+    "system_config"
   ],
   "required_operating_practices": [
-    "cloud responsibility and role definition",
-    "cloud security baseline and change approval",
-    "administrator privilege minimization and MFA",
-    "cloud setting monitoring",
-    "periodic cloud security review and follow-up tracking"
+    "클라우드 보안 policy ownership and review cycle",
+    "클라우드 보안 evidence review",
+    "클라우드 보안 exception approval"
   ],
   "required_evidence": [
-    "cloud responsibility matrix or policy",
-    "cloud security baseline",
-    "Cloudflare or Vercel configuration export",
-    "cloud administrator access review record",
-    "cloud setting change approval record",
-    "periodic cloud security review record"
+    "클라우드 보안 정책·절차 문서",
+    "클라우드 보안 운영 이행 기록",
+    "클라우드 보안 정기 검토 및 개선 기록",
+    "클라우드·서버·단말·패치·악성코드 보안 설정",
+    "Cloudflare 보안 설정 및 비밀 관리 근거"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.10.2.isms-p-2-10-2-001",
+      "control_id": "ISMS-P-2.10.2",
+      "title": "클라우드 보안 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.2-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.2.isms-p-2-10-2-002",
+      "control_id": "ISMS-P-2.10.2",
+      "title": "클라우드 보안 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.2-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.2.isms-p-2-10-2-003",
+      "control_id": "ISMS-P-2.10.2",
+      "title": "클라우드 보안 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.2-003"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.2.isms-p-2-10-2-004",
+      "control_id": "ISMS-P-2.10.2",
+      "title": "클라우드·서버·단말·패치·악성코드 보안 설정",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "system_config"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.2-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.2.isms-p-2-10-2-005",
+      "control_id": "ISMS-P-2.10.2",
+      "title": "Cloudflare 보안 설정 및 비밀 관리 근거",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "system_config"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.2-005"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
+        }
+      ]
+    }
   ],
   "common_defects": [
-    "cloud resources exist but responsibility boundaries are not documented",
-    "settings are captured once but not reviewed periodically",
-    "administrator roles are not separated from deployment roles",
-    "binding names exist but rotation and approval evidence is missing"
+    "클라우드 보안 evidence exists but has no owner",
+    "클라우드 보안 settings are captured once but not reviewed",
+    "클라우드 보안 exceptions are handled informally"
   ],
   "automation_potential": "partial",
   "human_review_required": true,
@@ -75,82 +185,7 @@
     "source_of_truth": "openkb",
     "openkb_control_id": "ISMS-P-2.10.2",
     "effective_status": "active",
-    "review_status": "reviewed",
+    "review_status": "needs_human_review",
     "source_confidence": "ocr_derived"
-  },
-  "requirements": [
-    {
-      "requirement_id": "ISMS-P-2.10.2.cloud-responsibility-matrix",
-      "control_id": "ISMS-P-2.10.2",
-      "title": "Cloud responsibility matrix defines cloud service ownership and security duties",
-      "kind": "policy",
-      "required": true,
-      "evidence_types": [
-        "policy_document",
-        "procedure_document"
-      ],
-      "review_frequency": "annual",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.10.2-001, EV-ISMS-P-2.10.2-002, EV-ISMS-P-2.10.2-003, EV-ISMS-P-2.10.2-004, EV-ISMS-P-2.10.2-005"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
-        }
-      ]
-    },
-    {
-      "requirement_id": "ISMS-P-2.10.2.cloud-security-baseline",
-      "control_id": "ISMS-P-2.10.2",
-      "title": "Cloud security baseline evidence covers secure settings and change approval",
-      "kind": "configuration",
-      "required": true,
-      "evidence_types": [
-        "configuration_export",
-        "connector_snapshot",
-        "change_approval_record"
-      ],
-      "review_frequency": "quarterly",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.10.2-001, EV-ISMS-P-2.10.2-002, EV-ISMS-P-2.10.2-003, EV-ISMS-P-2.10.2-004, EV-ISMS-P-2.10.2-005"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
-        }
-      ]
-    },
-    {
-      "requirement_id": "ISMS-P-2.10.2.cloud-admin-review",
-      "control_id": "ISMS-P-2.10.2",
-      "title": "Cloud administrator review records show privileged access review and follow-up",
-      "kind": "operation_record",
-      "required": true,
-      "evidence_types": [
-        "access_review_record",
-        "audit_log"
-      ],
-      "review_frequency": "quarterly",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.10.2-001, EV-ISMS-P-2.10.2-002, EV-ISMS-P-2.10.2-003, EV-ISMS-P-2.10.2-004, EV-ISMS-P-2.10.2-005"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.2_클라우드_보안.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.10.2 클라우드 보안"
-        }
-      ]
-    }
-  ]
+  }
 }

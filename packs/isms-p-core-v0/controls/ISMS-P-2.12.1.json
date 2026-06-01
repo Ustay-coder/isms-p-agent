@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.12.1",
+  "title": "재해 재난 대비 안전조치",
+  "domain": "보호대책 요구사항",
+  "category": "재해복구",
+  "requirement": "재해 재난 대비 안전조치: 해당 통제항목이 간편인증 세부항목에서 제외된 근거, the target service 운영상 잔존 리스크, 별도 보완 필요 여부가 기록되어야 한다.",
+  "intent": "Preserve traceability for deleted control ISMS-P-2.12.1 재해 재난 대비 안전조치 and require residual-risk review before treating it as not applicable.",
+  "applicability_questions": [
+    "Does 재해 재난 대비 안전조치 remain relevant through contracts, privacy obligations, or customer security requirements?",
+    "Has a human owner confirmed the deleted-control residual risk?"
+  ],
+  "observable_signals": [
+    "재해 재난 대비 안전조치",
+    "재해 재난 대비 안전조치 삭제 판정 및 잔존 리스크 검토 기록",
+    "재해 재난 대비 안전조치 관련 법적·계약상 요구사항 확인 기록",
+    "risk_review",
+    "legal_review"
+  ],
+  "required_operating_practices": [
+    "deleted-control decision review",
+    "residual risk assessment",
+    "human confirmation before treating the control as not applicable"
+  ],
+  "required_evidence": [
+    "재해 재난 대비 안전조치 삭제 판정 및 잔존 리스크 검토 기록",
+    "재해 재난 대비 안전조치 관련 법적·계약상 요구사항 확인 기록"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.12.1.isms-p-2-12-1-001",
+      "control_id": "ISMS-P-2.12.1",
+      "title": "재해 재난 대비 안전조치 삭제 판정 및 잔존 리스크 검토 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "risk_review"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.12.1-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.12.1_재해_재난_대비_안전조치.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.12.1 재해 재난 대비 안전조치"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.12.1.isms-p-2-12-1-002",
+      "control_id": "ISMS-P-2.12.1",
+      "title": "재해 재난 대비 안전조치 관련 법적·계약상 요구사항 확인 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "legal_review"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.12.1-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.12.1_재해_재난_대비_안전조치.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.12.1 재해 재난 대비 안전조치"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "treating the deleted control as if no residual risk exists",
+    "creating a normal remediation gap from a deleted control",
+    "missing human confirmation for deleted-control applicability"
+  ],
+  "automation_potential": "none",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.12.1 재해 재난 대비 안전조치 status 삭제"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.12.1"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.12.1-001, EV-ISMS-P-2.12.1-002"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.12.1_재해_재난_대비_안전조치.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.12.1 재해 재난 대비 안전조치"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.12.1",
+    "effective_status": "deleted_residual_risk",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

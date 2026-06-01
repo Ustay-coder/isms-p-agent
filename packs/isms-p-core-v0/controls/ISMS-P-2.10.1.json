@@ -32,6 +32,100 @@
     "보안 시스템 운영 정기 검토 및 개선 기록",
     "클라우드·서버·단말·패치·악성코드 보안 설정"
   ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.10.1.isms-p-2-10-1-001",
+      "control_id": "ISMS-P-2.10.1",
+      "title": "보안 시스템 운영 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.1-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.1.isms-p-2-10-1-002",
+      "control_id": "ISMS-P-2.10.1",
+      "title": "보안 시스템 운영 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.1-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.1.isms-p-2-10-1-003",
+      "control_id": "ISMS-P-2.10.1",
+      "title": "보안 시스템 운영 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.1-003"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.10.1.isms-p-2-10-1-004",
+      "control_id": "ISMS-P-2.10.1",
+      "title": "클라우드·서버·단말·패치·악성코드 보안 설정",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "system_config"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.10.1-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
+        }
+      ]
+    }
+  ],
   "common_defects": [
     "보안 시스템 운영 evidence exists but has no owner",
     "보안 시스템 운영 settings are captured once but not reviewed",
@@ -66,83 +160,7 @@
     "source_of_truth": "openkb",
     "openkb_control_id": "ISMS-P-2.10.1",
     "effective_status": "active",
-    "review_status": "reviewed",
+    "review_status": "needs_human_review",
     "source_confidence": "ocr_derived"
-  },
-  "requirements": [
-    {
-      "requirement_id": "ISMS-P-2.10.1.security-system-inventory",
-      "control_id": "ISMS-P-2.10.1",
-      "title": "Security system inventory identifies operated security systems and owners",
-      "kind": "configuration",
-      "required": true,
-      "evidence_types": [
-        "configuration_export",
-        "implementation_file"
-      ],
-      "review_frequency": "quarterly",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.10.1-001, EV-ISMS-P-2.10.1-002, EV-ISMS-P-2.10.1-003, EV-ISMS-P-2.10.1-004"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
-        }
-      ]
-    },
-    {
-      "requirement_id": "ISMS-P-2.10.1.security-system-baseline",
-      "control_id": "ISMS-P-2.10.1",
-      "title": "Security system baseline defines required settings, patches, and exception handling",
-      "kind": "policy",
-      "required": true,
-      "evidence_types": [
-        "policy_document",
-        "procedure_document",
-        "configuration_export"
-      ],
-      "review_frequency": "annual",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.10.1-001, EV-ISMS-P-2.10.1-002, EV-ISMS-P-2.10.1-003, EV-ISMS-P-2.10.1-004"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
-        }
-      ]
-    },
-    {
-      "requirement_id": "ISMS-P-2.10.1.security-system-operation-review",
-      "control_id": "ISMS-P-2.10.1",
-      "title": "Security system operation reviews show recurring review and remediation tracking",
-      "kind": "operation_record",
-      "required": true,
-      "evidence_types": [
-        "access_review_record",
-        "audit_log",
-        "test_result"
-      ],
-      "review_frequency": "quarterly",
-      "source_refs": [
-        {
-          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
-          "sha256": "openkb-managed",
-          "excerpt": "EV-ISMS-P-2.10.1-001, EV-ISMS-P-2.10.1-002, EV-ISMS-P-2.10.1-003, EV-ISMS-P-2.10.1-004"
-        },
-        {
-          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.10.1_보안_시스템_운영.md",
-          "sha256": "openkb-managed",
-          "excerpt": "ISMS-P-2.10.1 보안 시스템 운영"
-        }
-      ]
-    }
-  ]
+  }
 }

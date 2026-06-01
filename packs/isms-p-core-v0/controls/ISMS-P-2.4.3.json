@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.4.3",
+  "title": "정보시스템 보호",
+  "domain": "보호대책 요구사항",
+  "category": "물리 보안",
+  "requirement": "정보시스템 보호: 정보시스템 보호 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-2.4.3 정보시스템 보호 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 정보시스템 보호?",
+    "Is there an owner for reviewing 정보시스템 보호 evidence?"
+  ],
+  "observable_signals": [
+    "정보시스템 보호",
+    "정보시스템 보호 정책·절차 문서",
+    "정보시스템 보호 운영 이행 기록",
+    "정보시스템 보호 정기 검토 및 개선 기록",
+    "물리적 보호구역 및 장비 반출입 관리 기록",
+    "policy",
+    "record",
+    "review_record"
+  ],
+  "required_operating_practices": [
+    "정보시스템 보호 policy ownership and review cycle",
+    "정보시스템 보호 evidence review",
+    "정보시스템 보호 exception approval"
+  ],
+  "required_evidence": [
+    "정보시스템 보호 정책·절차 문서",
+    "정보시스템 보호 운영 이행 기록",
+    "정보시스템 보호 정기 검토 및 개선 기록",
+    "물리적 보호구역 및 장비 반출입 관리 기록"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.4.3.isms-p-2-4-3-001",
+      "control_id": "ISMS-P-2.4.3",
+      "title": "정보시스템 보호 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.4.3-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.3_정보시스템_보호.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.4.3 정보시스템 보호"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.4.3.isms-p-2-4-3-002",
+      "control_id": "ISMS-P-2.4.3",
+      "title": "정보시스템 보호 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.4.3-002"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.3_정보시스템_보호.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.4.3 정보시스템 보호"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.4.3.isms-p-2-4-3-003",
+      "control_id": "ISMS-P-2.4.3",
+      "title": "정보시스템 보호 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.4.3-003"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.3_정보시스템_보호.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.4.3 정보시스템 보호"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.4.3.isms-p-2-4-3-004",
+      "control_id": "ISMS-P-2.4.3",
+      "title": "물리적 보호구역 및 장비 반출입 관리 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.4.3-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.3_정보시스템_보호.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.4.3 정보시스템 보호"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "정보시스템 보호 evidence exists but has no owner",
+    "정보시스템 보호 settings are captured once but not reviewed",
+    "정보시스템 보호 exceptions are handled informally"
+  ],
+  "automation_potential": "none",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.4.3 정보시스템 보호 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.4.3"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.4.3-001, EV-ISMS-P-2.4.3-002, EV-ISMS-P-2.4.3-003, EV-ISMS-P-2.4.3-004"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.4.3_정보시스템_보호.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.4.3 정보시스템 보호"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.4.3",
+    "effective_status": "active",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

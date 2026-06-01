@@ -170,7 +170,7 @@ async function main(argv: string[]): Promise<void> {
   console.error("Usage: ismsp evidence export-public");
   console.error("Usage: ismsp evidence validate [--public]");
   console.error("Usage: ismsp pack install [pack-dir] [--overwrite]");
-  console.error("Usage: ismsp pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids> [--version <version>]");
+  console.error("Usage: ismsp pack generate --openkb <openkb-dir> --pack <pack-dir> --controls <ids|@annex-7-2-supported> [--version <version>]");
   console.error("Usage: ismsp pack validate [pack-dir]");
   console.error("Usage: ismsp ask-context <question> [--json] [--markdown]");
   process.exitCode = 1;

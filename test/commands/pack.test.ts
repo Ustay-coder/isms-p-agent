@@ -13,7 +13,7 @@ test("validatePack accepts the checked-in core v0 pack", async () => {
 
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
-  assert.equal(result.checkedControls, 8);
+  assert.equal(result.checkedControls, 88);
 });
 
 test("installPack copies validated pack controls into a workspace without overwriting by default", async () => {
@@ -25,7 +25,7 @@ test("installPack copies validated pack controls into a workspace without overwr
       overwrite: false
     });
 
-    assert.equal(result.installedControls, 8);
+    assert.equal(result.installedControls, 88);
     assert.deepEqual(result.skippedControls, []);
     assert.equal(result.outputDir, join(dir, "controls"));
 
@@ -34,7 +34,7 @@ test("installPack copies validated pack controls into a workspace without overwr
 
     await writeFile(join(dir, "controls", "ISMS-P-2.10.2.json"), "{\"local\":true}\n");
     const second = await installPack(dir, { packRoot, overwrite: false });
-    assert.equal(second.installedControls, 7);
+    assert.equal(second.installedControls, 87);
     assert.deepEqual(second.skippedControls, ["ISMS-P-2.10.2.json"]);
 
     const preserved = await readFile(join(dir, "controls", "ISMS-P-2.10.2.json"), "utf8");
@@ -77,7 +77,7 @@ test("installPack overwrites differing local controls when requested", async () 
     await writeFile(localPath, "{\"local\":true}\n");
     const result = await installPack(dir, { packRoot, overwrite: true });
 
-    assert.equal(result.installedControls, 8);
+    assert.equal(result.installedControls, 88);
     assert.deepEqual(result.skippedControls, []);
 
     const replaced = JSON.parse(await readFile(localPath, "utf8"));
@@ -154,6 +154,55 @@ test("validatePack rejects any raw legal path from direct OpenKB sources", async
   }
 });
 
+test("validatePack rejects missing or unsafe requirement-level mappings", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "isms-agent-pack-"));
+  try {
+    const packRoot = join(dir, "bad-pack");
+    await writeMinimalPack(packRoot, [
+      control({
+        requirements: []
+      }),
+      control({
+        control_id: "ISMS-P-2.10.2",
+        title: "클라우드 보안",
+        requirements: [
+          {
+            requirement_id: "ISMS-P-2.10.2.bad-raw-ref",
+            control_id: "ISMS-P-2.5.3",
+            title: "Unsafe requirement",
+            kind: "operation_record",
+            required: true,
+            evidence_types: ["risk_review"],
+            source_refs: [
+              {
+                sourcePath: "raw/legal/7의2_ISMS-P_인증기준_항목_목록.jsonl",
+                sha256: "openkb-managed"
+              }
+            ]
+          }
+        ],
+        pack: {
+          name: "bad-pack",
+          source_of_truth: "openkb",
+          openkb_control_id: "ISMS-P-2.10.2",
+          effective_status: "active",
+          review_status: "needs_human_review",
+          source_confidence: "ocr_derived"
+        }
+      })
+    ]);
+
+    const result = await validatePack(packRoot);
+
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join("\n"), /must include requirement-level evidence mappings/);
+    assert.match(result.issues.join("\n"), /requirement\.control_id must match ISMS-P-2\.10\.2/);
+    assert.match(result.issues.join("\n"), /must not cite raw legal profile rows as direct source_refs/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("CLI validates the default checked-in pack", () => {
   const result = spawnSync(process.execPath, [join(process.cwd(), "dist", "cli.js"), "pack", "validate"], {
     cwd: process.cwd(),
@@ -163,7 +212,7 @@ test("CLI validates the default checked-in pack", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /valid/);
-  assert.match(result.stdout, /checkedControls.*8/);
+  assert.match(result.stdout, /checkedControls.*88/);
 });
 
 test("CLI installs a selected pack into workspace controls", async () => {
@@ -181,11 +230,11 @@ test("CLI installs a selected pack into workspace controls", async () => {
 
     assert.equal(result.status, 0, result.stderr);
     const parsed = JSON.parse(result.stdout);
-    assert.equal(parsed.installedControls, 8);
+    assert.equal(parsed.installedControls, 88);
     assert.deepEqual(parsed.skippedControls, []);
     assert.equal(
       await readdir(join(dir, "controls")).then((names) => names.filter((name) => name.endsWith(".json")).length),
-      8
+      88
     );
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -208,7 +257,7 @@ test("CLI installs the default pack from the repository workspace", () => {
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.packRoot, join(process.cwd(), "packs", "isms-p-core-v0"));
   assert.equal(parsed.outputDir, join(process.cwd(), "controls"));
-  assert.equal(parsed.installedControls + parsed.skippedControls.length, 8);
+  assert.equal(parsed.installedControls + parsed.skippedControls.length, 88);
 });
 
 async function writeMinimalPack(packRoot: string, controls: ControlKnowledge[]): Promise<void> {
@@ -253,6 +302,22 @@ function control(overrides: Partial<ControlKnowledge> = {}): ControlKnowledge {
       {
         sourcePath: "compiled/controls/annex_7_2_mapping.jsonl",
         sha256: "openkb-managed"
+      }
+    ],
+    requirements: [
+      {
+        requirement_id: "ISMS-P-2.5.3.authentication-policy",
+        control_id: "ISMS-P-2.5.3",
+        title: "Authentication policy evidence",
+        kind: "policy",
+        required: true,
+        evidence_types: ["policy"],
+        source_refs: [
+          {
+            sourcePath: "compiled/evidence/evidence_requirements.jsonl",
+            sha256: "openkb-managed"
+          }
+        ]
       }
     ],
     pack: {

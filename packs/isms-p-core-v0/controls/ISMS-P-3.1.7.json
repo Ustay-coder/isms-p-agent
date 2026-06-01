@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-3.1.7",
+  "title": "마케팅 목적의 개인정보 수집·이용",
+  "domain": "개인정보 처리단계별 요구사항",
+  "category": "개인정보 수집 시 보호조치",
+  "requirement": "마케팅 목적의 개인정보 수집·이용: 마케팅 목적의 개인정보 수집·이용 요구사항을 수행하는 책임자, 절차, 예외 처리, 검토 주기가 문서에 포함되어야 한다.",
+  "intent": "Confirm operating coverage for ISMS-P-3.1.7 마케팅 목적의 개인정보 수집·이용 using OpenKB-derived evidence requirements.",
+  "applicability_questions": [
+    "Does the service operate systems or data flows covered by 마케팅 목적의 개인정보 수집·이용?",
+    "Is there an owner for reviewing 마케팅 목적의 개인정보 수집·이용 evidence?"
+  ],
+  "observable_signals": [
+    "마케팅 목적의 개인정보 수집·이용",
+    "마케팅 목적의 개인정보 수집·이용 정책·절차 문서",
+    "마케팅 목적의 개인정보 수집·이용 운영 이행 기록",
+    "마케팅 목적의 개인정보 수집·이용 정기 검토 및 개선 기록",
+    "개인정보 수집 동의 및 수집 제한 근거",
+    "policy",
+    "record",
+    "review_record",
+    "privacy_record"
+  ],
+  "required_operating_practices": [
+    "마케팅 목적의 개인정보 수집·이용 policy ownership and review cycle",
+    "마케팅 목적의 개인정보 수집·이용 evidence review",
+    "마케팅 목적의 개인정보 수집·이용 exception approval"
+  ],
+  "required_evidence": [
+    "마케팅 목적의 개인정보 수집·이용 정책·절차 문서",
+    "마케팅 목적의 개인정보 수집·이용 운영 이행 기록",
+    "마케팅 목적의 개인정보 수집·이용 정기 검토 및 개선 기록",
+    "개인정보 수집 동의 및 수집 제한 근거"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-3.1.7.isms-p-3-1-7-001",
+      "control_id": "ISMS-P-3.1.7",
+      "title": "마케팅 목적의 개인정보 수집·이용 정책·절차 문서",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy"
+      ],
+      "review_frequency": "per_change",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.1.7-001"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.1.7.isms-p-3-1-7-002",
+      "control_id": "ISMS-P-3.1.7",
+      "title": "마케팅 목적의 개인정보 수집·이용 운영 이행 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.1.7-002"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.1.7.isms-p-3-1-7-003",
+      "control_id": "ISMS-P-3.1.7",
+      "title": "마케팅 목적의 개인정보 수집·이용 정기 검토 및 개선 기록",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.1.7-003"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-3.1.7.isms-p-3-1-7-004",
+      "control_id": "ISMS-P-3.1.7",
+      "title": "개인정보 수집 동의 및 수집 제한 근거",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "privacy_record"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-3.1.7-004"
+        }
+      ]
+    }
+  ],
+  "common_defects": [
+    "마케팅 목적의 개인정보 수집·이용 evidence exists but has no owner",
+    "마케팅 목적의 개인정보 수집·이용 settings are captured once but not reviewed",
+    "마케팅 목적의 개인정보 수집·이용 exceptions are handled informally"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-3.1.7 마케팅 목적의 개인정보 수집·이용 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-3.1.7"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-3.1.7-001, EV-ISMS-P-3.1.7-002, EV-ISMS-P-3.1.7-003, EV-ISMS-P-3.1.7-004"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-3.1.7",
+    "effective_status": "active",
+    "review_status": "needs_human_review",
+    "source_confidence": "ocr_derived"
+  }
+}

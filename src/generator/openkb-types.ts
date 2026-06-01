@@ -29,6 +29,7 @@ export interface EvidenceRequirementRow {
   evidence_type: string;
   automation_candidate: boolean;
   acceptance_criteria: string;
+  refresh_cycle?: string;
 }
 
 export interface RawLegalRow {
