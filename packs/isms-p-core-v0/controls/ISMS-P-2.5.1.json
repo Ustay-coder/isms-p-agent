@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.5.1",
+  "title": "사용자 계정 관리",
+  "domain": "보호대책 요구사항",
+  "category": "인증 및 권한관리",
+  "requirement": "User accounts must be created, changed, disabled, and reviewed through controlled ownership, approval, and lifecycle procedures.",
+  "intent": "Confirm that account lifecycle operations are owned, approved, traceable, and periodically reviewed before account or permission evidence is treated as operating evidence.",
+  "applicability_questions": [
+    "Does the service create user, administrator, organization member, evaluator, or machine accounts?",
+    "Can account state or role changes affect access to important systems or personal information?",
+    "Is there an owner who can confirm account issuance, change, suspension, and removal records?"
+  ],
+  "observable_signals": [
+    "account creation",
+    "account lifecycle",
+    "user status",
+    "organization member",
+    "role assignment",
+    "invitation",
+    "deactivation",
+    "account audit",
+    "permission change"
+  ],
+  "required_operating_practices": [
+    "account lifecycle policy ownership and review cycle",
+    "account issuance, change, suspension, and removal approval",
+    "privileged or organization account review",
+    "account exception approval and follow-up",
+    "periodic account inventory reconciliation"
+  ],
+  "required_evidence": [
+    "user account management policy or procedure",
+    "account issuance, change, suspension, and removal log",
+    "account and permission configuration record",
+    "periodic account review record",
+    "account exception approval record"
+  ],
+  "common_defects": [
+    "accounts exist in the system but lifecycle owners are not documented",
+    "role or organization membership changes are not tied to approval records",
+    "disabled or inactive accounts are not reviewed periodically",
+    "machine or service accounts are excluded from account inventory"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.1 사용자 계정 관리 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.5.1"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.5.1-001, EV-ISMS-P-2.5.1-002, EV-ISMS-P-2.5.1-003, EV-ISMS-P-2.5.1-004, EV-ISMS-P-2.5.1-005"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.1_사용자_계정_관리.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.1 사용자 계정 관리"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.5.1",
+    "effective_status": "active",
+    "review_status": "reviewed",
+    "source_confidence": "ocr_derived"
+  },
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.5.1.account-lifecycle-policy",
+      "control_id": "ISMS-P-2.5.1",
+      "title": "Account lifecycle policy defines account issuance, change, suspension, and removal responsibilities",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy_document",
+        "procedure_document"
+      ],
+      "review_frequency": "annual",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.1-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.1_사용자_계정_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.1 사용자 계정 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.1.account-change-record",
+      "control_id": "ISMS-P-2.5.1",
+      "title": "Account issuance, change, and removal records show requester, approver, processor, and timestamp",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "system_export",
+        "access_request_record",
+        "audit_log"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.1-002, EV-ISMS-P-2.5.1-005"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.1_사용자_계정_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.1 사용자 계정 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.1.account-review-record",
+      "control_id": "ISMS-P-2.5.1",
+      "title": "Account and permission review records show periodic review, exceptions, and follow-up",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "access_review_record",
+        "configuration_export",
+        "connector_snapshot"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.1-003, EV-ISMS-P-2.5.1-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.1_사용자_계정_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.1 사용자 계정 관리"
+        }
+      ]
+    }
+  ]
+}

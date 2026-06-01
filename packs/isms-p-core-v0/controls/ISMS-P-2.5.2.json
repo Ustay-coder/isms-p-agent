@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.5.2",
+  "title": "사용자 식별",
+  "domain": "보호대책 요구사항",
+  "category": "인증 및 권한관리",
+  "requirement": "Users must be uniquely identified so access activity can be attributed to an accountable person or controlled account.",
+  "intent": "Confirm that user identities are unique, traceable, and reviewed before authentication or access evidence is used for control judgment.",
+  "applicability_questions": [
+    "Does the service allow multiple people, organizations, administrators, or evaluators to access shared systems?",
+    "Can actions on important systems or personal information be attributed to a unique account?",
+    "Are shared, dormant, or ambiguous accounts prohibited or explicitly controlled?"
+  ],
+  "observable_signals": [
+    "unique user id",
+    "email identity",
+    "oauth identity",
+    "organization membership",
+    "admin account",
+    "shared account",
+    "service account",
+    "audit actor",
+    "identity mapping"
+  ],
+  "required_operating_practices": [
+    "unique user identification policy ownership and review cycle",
+    "shared account prohibition or exception approval",
+    "identity mapping review for external identity providers",
+    "audit actor traceability review",
+    "periodic review of dormant or duplicate identities"
+  ],
+  "required_evidence": [
+    "user identification policy or procedure",
+    "identity provider or user table configuration record",
+    "shared account exception register",
+    "audit actor traceability sample",
+    "periodic identity review record"
+  ],
+  "common_defects": [
+    "authentication exists but user actions cannot be tied to a unique actor",
+    "shared operational accounts are used without exception approval",
+    "external identity provider mappings are not reviewed after changes",
+    "dormant or duplicate identities remain active without review"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.2 사용자 식별 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.5.2"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.5.2-001, EV-ISMS-P-2.5.2-002, EV-ISMS-P-2.5.2-003, EV-ISMS-P-2.5.2-004"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.2_사용자_식별.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.2 사용자 식별"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.5.2",
+    "effective_status": "active",
+    "review_status": "reviewed",
+    "source_confidence": "ocr_derived"
+  },
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.5.2.unique-identity-policy",
+      "control_id": "ISMS-P-2.5.2",
+      "title": "User identification policy requires unique identities and controlled exceptions",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy_document",
+        "procedure_document"
+      ],
+      "review_frequency": "annual",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.2-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.2_사용자_식별.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.2 사용자 식별"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.2.identity-configuration",
+      "control_id": "ISMS-P-2.5.2",
+      "title": "Identity configuration evidence shows unique account identifiers and external identity mappings",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "configuration_export",
+        "connector_snapshot",
+        "system_export"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.2-002, EV-ISMS-P-2.5.2-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.2_사용자_식별.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.2 사용자 식별"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.2.identity-review-record",
+      "control_id": "ISMS-P-2.5.2",
+      "title": "Identity review records confirm duplicate, dormant, shared, and ambiguous accounts are handled",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "access_review_record",
+        "audit_log",
+        "exception_register"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.2-003, EV-ISMS-P-2.5.2-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.2_사용자_식별.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.2 사용자 식별"
+        }
+      ]
+    }
+  ]
+}

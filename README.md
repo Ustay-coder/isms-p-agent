@@ -250,11 +250,14 @@ Public examples in this repository must be synthetic or explicitly redacted. Do 
 
 ## Control Knowledge Pack v0
 
-The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes eight controls.
+The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes eleven controls.
 
 The direct pack sources are OpenKB `compiled/controls`, `compiled/citations`, `compiled/evidence`, and public `wiki` notes. Raw legal profile rows such as `raw/legal/7의2...` are kept only as source-profile cross-check references because their numbering can differ from the compiled OpenKB control IDs.
 
+- `ISMS-P-2.5.1 사용자 계정 관리`
+- `ISMS-P-2.5.2 사용자 식별`
 - `ISMS-P-2.5.3 사용자 인증`
+- `ISMS-P-2.5.4 비밀번호 관리`
 - `ISMS-P-2.5.6 접근권한 검토`
 - `ISMS-P-2.10.2 클라우드 보안`
 

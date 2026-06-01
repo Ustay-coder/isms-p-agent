@@ -15,7 +15,10 @@ test("isms-p-core-v0 pack has the expected OpenKB controls", async () => {
     "ISMS-P-2.10.2.json",
     "ISMS-P-2.2.4.json",
     "ISMS-P-2.3.1.json",
+    "ISMS-P-2.5.1.json",
+    "ISMS-P-2.5.2.json",
     "ISMS-P-2.5.3.json",
+    "ISMS-P-2.5.4.json",
     "ISMS-P-2.5.6.json",
     "ISMS-P-2.9.4.json"
   ]);
@@ -30,7 +33,10 @@ test("isms-p-core-v0 pack has the expected OpenKB controls", async () => {
     "ISMS-P-2.10.2",
     "ISMS-P-2.2.4",
     "ISMS-P-2.3.1",
+    "ISMS-P-2.5.1",
+    "ISMS-P-2.5.2",
     "ISMS-P-2.5.3",
+    "ISMS-P-2.5.4",
     "ISMS-P-2.5.6",
     "ISMS-P-2.9.4"
   ]);
@@ -41,7 +47,7 @@ test("active pack controls have analyzer-useful fields", async () => {
   const controls = await loadPackControls();
   const active = controls.filter((control) => control.pack?.effective_status === "active");
 
-  assert.equal(active.length, 6);
+  assert.equal(active.length, 9);
   for (const control of active) {
     assert.ok(control.observable_signals.length >= 5, `${control.control_id} observable_signals`);
     assert.ok(control.required_operating_practices.length >= 3, `${control.control_id} operating practices`);
@@ -154,7 +160,10 @@ test("public pack files avoid private absolute paths and credential-looking valu
     "controls/ISMS-P-2.10.2.json",
     "controls/ISMS-P-2.2.4.json",
     "controls/ISMS-P-2.3.1.json",
+    "controls/ISMS-P-2.5.1.json",
+    "controls/ISMS-P-2.5.2.json",
     "controls/ISMS-P-2.5.3.json",
+    "controls/ISMS-P-2.5.4.json",
     "controls/ISMS-P-2.5.6.json",
     "controls/ISMS-P-2.9.4.json"
   ];

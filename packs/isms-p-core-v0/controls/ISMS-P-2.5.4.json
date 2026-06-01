@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "control_id": "ISMS-P-2.5.4",
+  "title": "비밀번호 관리",
+  "domain": "보호대책 요구사항",
+  "category": "인증 및 권한관리",
+  "requirement": "Password and credential authentication controls must be defined, configured, reviewed, and exception-managed where password-based authentication remains in use.",
+  "intent": "Confirm that password-based authentication is governed by policy, implemented in configuration, and reviewed with exceptions tracked.",
+  "applicability_questions": [
+    "Does the service or an administrator path allow password-based login or fallback credentials?",
+    "Are password requirements, reset flows, temporary passwords, or credential recovery paths present?",
+    "Are password policy exceptions reviewed when SSO, OAuth, or MFA changes reduce direct password use?"
+  ],
+  "observable_signals": [
+    "password policy",
+    "password reset",
+    "credential recovery",
+    "temporary password",
+    "minimum length",
+    "lockout",
+    "password history",
+    "oauth fallback",
+    "admin password"
+  ],
+  "required_operating_practices": [
+    "password policy ownership and review cycle",
+    "password configuration and recovery flow review",
+    "temporary or fallback credential exception approval",
+    "privileged password or break-glass credential review",
+    "periodic password-control effectiveness review"
+  ],
+  "required_evidence": [
+    "password management policy or procedure",
+    "password and credential configuration export",
+    "password reset or recovery flow review record",
+    "temporary credential exception register",
+    "periodic password-control review record"
+  ],
+  "common_defects": [
+    "password controls are assumed unnecessary because OAuth or SSO exists but fallback paths remain",
+    "temporary credentials are issued without expiry or approval evidence",
+    "password reset flows are implemented but not reviewed as an authentication control",
+    "administrator password or break-glass credentials are not separately reviewed"
+  ],
+  "automation_potential": "partial",
+  "human_review_required": true,
+  "source_refs": [
+    {
+      "sourcePath": "compiled/controls/annex_7_2_mapping.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.4 비밀번호 관리 status 유지"
+    },
+    {
+      "sourcePath": "compiled/citations/source_claims.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "CLM-2.5.4"
+    },
+    {
+      "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+      "sha256": "openkb-managed",
+      "excerpt": "EV-ISMS-P-2.5.4-001, EV-ISMS-P-2.5.4-002, EV-ISMS-P-2.5.4-003, EV-ISMS-P-2.5.4-004"
+    },
+    {
+      "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+      "sha256": "openkb-managed",
+      "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+    }
+  ],
+  "pack": {
+    "name": "isms-p-core-v0",
+    "source_of_truth": "openkb",
+    "openkb_control_id": "ISMS-P-2.5.4",
+    "effective_status": "active",
+    "review_status": "reviewed",
+    "source_confidence": "ocr_derived"
+  },
+  "requirements": [
+    {
+      "requirement_id": "ISMS-P-2.5.4.password-policy",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "Password management policy defines password, reset, recovery, and exception requirements",
+      "kind": "policy",
+      "required": true,
+      "evidence_types": [
+        "policy_document",
+        "procedure_document"
+      ],
+      "review_frequency": "annual",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-001"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.4.password-configuration",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "Password configuration evidence covers active password, reset, recovery, fallback, and lockout controls",
+      "kind": "configuration",
+      "required": true,
+      "evidence_types": [
+        "configuration_export",
+        "connector_snapshot",
+        "system_export"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-002, EV-ISMS-P-2.5.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    },
+    {
+      "requirement_id": "ISMS-P-2.5.4.password-review-record",
+      "control_id": "ISMS-P-2.5.4",
+      "title": "Password-control review records show periodic review, exceptions, and remediation follow-up",
+      "kind": "operation_record",
+      "required": true,
+      "evidence_types": [
+        "review_record",
+        "exception_register",
+        "audit_log"
+      ],
+      "review_frequency": "quarterly",
+      "source_refs": [
+        {
+          "sourcePath": "compiled/evidence/evidence_requirements.jsonl",
+          "sha256": "openkb-managed",
+          "excerpt": "EV-ISMS-P-2.5.4-003, EV-ISMS-P-2.5.4-004"
+        },
+        {
+          "sourcePath": "wiki/controls/2_보호대책_요구사항/ISMS-P-2.5.4_비밀번호_관리.md",
+          "sha256": "openkb-managed",
+          "excerpt": "ISMS-P-2.5.4 비밀번호 관리"
+        }
+      ]
+    }
+  ]
+}
