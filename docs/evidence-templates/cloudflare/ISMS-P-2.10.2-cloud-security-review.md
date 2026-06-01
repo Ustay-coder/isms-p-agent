@@ -39,6 +39,7 @@ After the private review is complete, record the decision with:
 isms-agent evidence review <evidence-id> \
   --requirement ISMS-P-2.10.2.cloudflare-config-export \
   --decision accepted \
+  --private-evidence evidence/private/ISMS-P-2.10.2/security-review/<record-file> \
   --reviewer <reviewer-name> \
   --rationale "Private Cloudflare security review completed against current service scope."
 ```

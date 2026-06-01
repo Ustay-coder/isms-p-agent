@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { scanLocalRepo } from "../../src/scanners/local-repo.js";
 
-const SECRET_VALUE = "sk_test_secret_value_123";
+const SECRET_VALUE = ["sk", "test", "secret_value_123"].join("_");
 
 test("scanLocalRepo detects repo metadata without storing source contents or secret values", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-local-repo-"));

@@ -1,6 +1,10 @@
 # ISMS-P Agent
 
-ISMS-P Agent is an open source, CLI-first ISMS-P readiness assistant for startup SaaS teams preparing for certification readiness work.
+ISMS-P Agent is an open-source, CLI-first ISMS-P readiness assistant for startup SaaS teams preparing for certification work.
+
+This repository is an **early preview**. It is intended to show the project direction, architecture, safety model, and contribution surface for community review. It does not certify a service, create final audit evidence, replace an auditor, or replace a human control owner.
+
+The package is marked `private` in `package.json`. The current release posture is source-first public collaboration, not npm publication or a hosted SaaS product.
 
 The MVP helps a team turn source material, operating documents, repository metadata, and read-only SaaS metadata into practical next steps:
 
@@ -8,7 +12,45 @@ The MVP helps a team turn source material, operating documents, repository metad
 - a control gap report,
 - an evidence map that lists candidate evidence only.
 
-It does not create final audit evidence, mutate SaaS settings, store secrets, collect customer data, or replace human control-owner review.
+It does not create final audit evidence, mutate SaaS settings, store secrets, collect customer data, or publish private evidence.
+
+## Quickstart
+
+Use Node.js 22 or later.
+
+```bash
+git clone https://github.com/<owner>/isms-p-agent.git
+cd isms-p-agent
+npm ci
+npm run build
+npm test
+```
+
+Validate the bundled public control pack:
+
+```bash
+node dist/cli.js pack validate packs/isms-p-core-v0
+```
+
+Run the synthetic end-to-end sample:
+
+```bash
+node dist/cli.js init
+node dist/cli.js pack install packs/isms-p-core-v0
+node dist/cli.js scan --local --target examples/e2e-sample
+node dist/cli.js evidence index
+node dist/cli.js report --public
+node dist/cli.js evidence export-public
+node dist/cli.js evidence validate --public
+```
+
+Ask a local coding agent to answer from the grounded context bundle:
+
+```bash
+node dist/cli.js ask-context "What ISMS-P gaps should we handle first?" --markdown
+```
+
+The `ask-context` command does not call an LLM API. It prepares conservative context so Codex, Claude Code, or another local agent can answer without treating candidate evidence as certification-ready evidence.
 
 ## Implementation Approach
 
@@ -60,19 +102,19 @@ The intended flow is:
 6. Generate Markdown reports that separate observed state, uncertainty, gaps, candidate evidence, and accepted review decisions.
 7. Use public validation/export commands before publishing any example output.
 
-## MVP Workflow
+## CLI Workflow
 
 ```bash
-npm install
+npm ci
 npm run build
 npm test
+node dist/cli.js pack validate packs/isms-p-core-v0
 npm link
-isms-agent pack validate
 isms-agent init
 isms-agent ingest raw/example.md
 isms-agent scan --local
-isms-agent scan --local --target project/evaluation
-isms-agent scan --local --target project/evaluation --include app,services,repositories,db,lib,specs --exclude __tests__
+isms-agent scan --local --target project/sample-service
+isms-agent scan --local --target project/sample-service --include app,services,repositories,db,lib,specs --exclude __tests__
 isms-agent scan --cloudflare example.com
 isms-agent scan \
   --cloudflare example.com \
@@ -135,7 +177,35 @@ isms-agent evidence validate --public
 
 Accepted Cloudflare evidence is a manual operating-evidence decision. Before recording `--decision accepted`, use the private templates in [docs/evidence-templates/cloudflare/](docs/evidence-templates/cloudflare/) to confirm accepted criteria, private storage, and public export rules. Scanner output alone is not enough to accept ISMS-P-2.10.2 operating evidence.
 
-See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and evaluation service dry-run flow.
+Accepted decisions must reference an existing local private evidence file or directory under `evidence/private/`:
+
+```bash
+isms-agent evidence review ev_cloudflare_security_review_2026_q2 \
+  --requirement ISMS-P-2.10.2.cloudflare-config-export \
+  --decision accepted \
+  --private-evidence evidence/private/ISMS-P-2.10.2/security-review/2026-Q2.md \
+  --rationale "Private Cloudflare security review confirmed by the security owner." \
+  --reviewer security-owner
+```
+
+Keep the private file path out of `evidence/index.jsonl` locators. Use a public-safe locator such as an internal reference ID, and let the accepted review record carry the private path through `--private-evidence`.
+
+Manual operating evidence can be registered without exposing private paths:
+
+```bash
+isms-agent evidence add \
+  --id ev_manual_auth_policy_2026_q2 \
+  --title "Authentication policy 2026 Q2" \
+  --type policy_document \
+  --classification internal \
+  --supports ISMS-P-2.5.3.authentication-policy \
+  --private-evidence evidence/private/ISMS-P-2.5.3/authentication-policy/2026-Q2.md \
+  --summary "Authentication policy reviewed for 2026 Q2."
+```
+
+`evidence add` does not create or approve evidence. It registers an existing private file or directory as `needs_review` metadata. Use `evidence review --decision accepted --private-evidence ...` only after a human control owner confirms the evidence.
+
+See [docs/connectors/cloudflare.md](docs/connectors/cloudflare.md) for the current endpoint matrix, least-privilege token shape, omitted-field rules, and sample service dry-run flow.
 
 ## Natural-Language Questions with Agents
 
@@ -173,15 +243,19 @@ isms-agent evidence validate --public
 
 The validator fails when private evidence, scans, reports, or review overlays are tracked by git, or when public evidence metadata contains unsafe classifications or credential-like values. `report --public` and `evidence export-public` omit locators, raw payloads, source excerpts, private paths, and review rationale.
 
+Public examples in this repository must be synthetic or explicitly redacted. Do not contribute real access exports, screenshots, production scans, policy documents, customer records, private paths, account IDs, or secrets.
+
 ## Control Knowledge Pack v0
 
-The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes three controls:
+The first curated pack is `packs/isms-p-core-v0`. It uses the local OpenKB ISMS-P workspace as the source of truth and includes eight controls.
 
 The direct pack sources are OpenKB `compiled/controls`, `compiled/citations`, `compiled/evidence`, and public `wiki` notes. Raw legal profile rows such as `raw/legal/7의2...` are kept only as source-profile cross-check references because their numbering can differ from the compiled OpenKB control IDs.
 
 - `ISMS-P-2.5.3 사용자 인증`
 - `ISMS-P-2.5.6 접근권한 검토`
 - `ISMS-P-2.10.2 클라우드 보안`
+
+Contributors can improve reviewed controls through source-traceable pull requests. See [docs/control-pack-contributions.md](docs/control-pack-contributions.md) for source reference rules, judgment-basis discipline, and validation commands.
 
 ### Generating Draft Packs from OpenKB
 
@@ -239,3 +313,9 @@ Key defaults:
 - customer records and personal data are out of scope,
 - source provenance is required for generated control knowledge,
 - human approval is required before treating candidate evidence as certification-ready evidence.
+
+## Korean Summary
+
+ISMS-P Agent는 ISMS-P 인증 준비를 돕는 로컬 우선 CLI입니다. 현재 공개 저장소는 early preview이며, 프로젝트 방향성, 아키텍처, 통제항목 팩, 증적 안전 모델, 기여 방식을 보여주는 것이 목적입니다.
+
+이 도구는 인증을 보장하지 않습니다. 스캐너가 찾은 항목은 후보 증적일 뿐이며, 실제 운영 증적의 수집과 accepted 판단은 조직의 담당자 검토를 거쳐야 합니다. 공개 저장소에는 실제 서비스 증적, 고객정보, 계정 식별자, 토큰, 내부 정책 원문을 올리지 마세요.

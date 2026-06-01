@@ -1,4 +1,6 @@
-# Evaluation Service Security Notes
+# Sample Service Security Notes
+
+This is synthetic fixture content for public CLI smoke tests. It is not copied from a real service and must not be treated as operational evidence.
 
 ## User authentication policy or procedure
 

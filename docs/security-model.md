@@ -28,6 +28,12 @@ Scanner output is not evidence acceptance. `isms-agent evidence index` turns sca
 
 Accepted Cloudflare operating evidence must come from manual private-record review, not from scanner output alone. The templates under `docs/evidence-templates/cloudflare/` define the accepted criteria, private storage location, and public export rule for Cloudflare access review, change approval, and security review evidence before a human owner records an accepted decision.
 
+Accepted review decisions require `--private-evidence <path>`, and that path must exist under `evidence/private/`. Review records store only the workspace-relative private path, and public reports omit private evidence paths and review rationale.
+
+`isms-agent evidence add` registers existing private operating evidence as public-safe metadata. The command requires `--private-evidence evidence/private/...` to exist, but it does not store that path in `evidence/index.jsonl`. The private path is recorded only in an accepted review overlay, and public report/export paths omit it.
+
+Evidence index locators should remain public-safe references. Do not put `evidence/private/...` paths in `evidence/index.jsonl`; use `--private-evidence` on the accepted review record instead.
+
 The default workspace keeps real evidence local:
 
 - `evidence/private/` for real evidence files,
@@ -36,10 +42,6 @@ The default workspace keeps real evidence local:
 - `reports/` for private reports.
 
 These paths are ignored by default. Public artifacts should be produced through `isms-agent report --public`, `isms-agent evidence export-public`, and `isms-agent evidence validate --public`.
-
-## Dogfood Note: 2026-05-29
-
-Small-batch control expansion keeps real evidence local. The public repository includes curated control knowledge and public-safe documentation, while `evidence/private/`, `reviews/`, `scans/`, and `reports/` remain local workspace state unless a public-safe export command creates redacted output.
 
 ## No Customer Or Personal Data Collection
 
@@ -73,3 +75,9 @@ Human approval is required before:
 - deciding that candidate evidence is current, complete, and acceptable.
 
 Technical configuration alone is not proof of control operation. Evidence existence is not control satisfaction.
+
+## Public Repository Boundary
+
+The public repository includes source code, synthetic fixtures, public documentation, and reviewed control-pack content. It must not include real operational evidence, private scanner output, private review overlays, customer records, account identifiers, local workspace paths, or service-specific dogfood analysis.
+
+Public examples should be produced from synthetic fixtures or redacted through the explicit public export commands. Any public artifact that depends on real service material must be reviewed as a separate documentation change before publication.

@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { appendFile, lstat, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { EvidenceItem, EvidenceReviewRecord, ReviewDecision } from "../schemas/evidence.js";
+import type { EvidenceClassification, EvidenceItem, EvidenceReviewRecord, EvidenceType, ReviewDecision } from "../schemas/evidence.js";
 import type { ScanResult, ScanSignal } from "../schemas/scan.js";
 
 const execFileAsync = promisify(execFile);
@@ -17,6 +17,28 @@ const PRIVATE_TRACKED_PREFIXES = [
 
 const UNSAFE_PUBLIC_CLASSIFICATIONS = new Set(["secret", "personal_data"]);
 const PUBLIC_EXPORT_CLASSIFICATIONS = new Set(["public_sample"]);
+const MANUAL_EVIDENCE_CLASSIFICATIONS = new Set<EvidenceClassification>(["internal", "confidential", "public_sample"]);
+const EVIDENCE_TYPES = new Set<EvidenceType>([
+  "policy_document",
+  "procedure_document",
+  "configuration_export",
+  "access_review_record",
+  "change_approval_record",
+  "audit_log",
+  "implementation_file",
+  "test_result",
+  "connector_snapshot",
+  "applicability_note"
+]);
+const MANUAL_EVIDENCE_ID_PATTERN = /^ev_[a-z0-9][a-z0-9_]{1,94}$/;
+const RESERVED_MANUAL_METADATA_KEYS = new Set([
+  "privateevidencepath",
+  "privatepath",
+  "path",
+  "file",
+  "filename",
+  "privateevidencepresent"
+]);
 
 export interface EvidenceValidateOptions {
   public?: boolean;
@@ -42,6 +64,24 @@ export interface EvidenceIndexResult {
   signalCount: number;
 }
 
+export interface EvidenceAddOptions {
+  id: string;
+  title: string;
+  evidenceType: EvidenceType;
+  classification: EvidenceClassification;
+  supports: string[];
+  privateEvidencePath: string;
+  summary: string;
+  validUntil?: string;
+  metadata?: Record<string, string>;
+  collectedAt?: Date;
+}
+
+export interface EvidenceAddResult {
+  outputPath: string;
+  item: EvidenceItem;
+}
+
 export interface EvidenceReviewOptions {
   evidenceId: string;
   requirementId: string;
@@ -49,6 +89,7 @@ export interface EvidenceReviewOptions {
   rationale: string;
   reviewer?: string;
   expiresAt?: string;
+  privateEvidencePath?: string;
   reviewedAt?: Date;
 }
 
@@ -95,6 +136,81 @@ export interface PublicEvidenceExportResult {
   omittedEvidence: number;
 }
 
+export async function addManualEvidence(
+  workspaceRoot: string,
+  options: EvidenceAddOptions
+): Promise<EvidenceAddResult> {
+  validateManualEvidenceOptions(options);
+  const privateEvidencePath = await resolvePrivateEvidencePath(
+    workspaceRoot,
+    options.privateEvidencePath,
+    "Manual evidence private path"
+  );
+  const contentSha256 = await hashEvidencePath(resolve(workspaceRoot, privateEvidencePath), workspaceRoot);
+  validateManualMetadata(options.metadata ?? {});
+
+  const existingEvidence = await loadEvidenceIndex(workspaceRoot);
+  if (existingEvidence.some((item) => item.evidence_id === options.id)) {
+    throw new Error(`Evidence id already exists in evidence/index.jsonl: ${options.id}`);
+  }
+
+  const item: EvidenceItem = {
+    evidence_id: options.id,
+    title: options.title.trim(),
+    evidence_type: options.evidenceType,
+    classification: options.classification,
+    lifecycle_status: "needs_review",
+    origin: "manual",
+    supports: [...new Set(options.supports.map((value) => value.trim()).filter(Boolean))]
+      .sort((left, right) => left.localeCompare(right, "en")),
+    locator: {
+      kind: "external_reference",
+      value: options.id
+    },
+    summary: options.summary.trim(),
+    content_sha256: contentSha256,
+    collected_at: (options.collectedAt ?? new Date()).toISOString(),
+    ...(options.validUntil ? { valid_until: options.validUntil } : {}),
+    review_required: true,
+    metadata: {
+      ...(options.metadata ?? {}),
+      private_evidence_present: true
+    }
+  };
+
+  const outputPath = await writeEvidenceIndex(workspaceRoot, [...existingEvidence, item]);
+  return { outputPath, item };
+}
+
+function validateManualEvidenceOptions(options: EvidenceAddOptions): void {
+  if (!MANUAL_EVIDENCE_ID_PATTERN.test(options.id)) {
+    throw new Error("Manual evidence --id must match /^ev_[a-z0-9][a-z0-9_]{1,94}$/.");
+  }
+  if (!options.title.trim()) {
+    throw new Error("Manual evidence requires --title.");
+  }
+  if (!EVIDENCE_TYPES.has(options.evidenceType)) {
+    throw new Error(`Manual evidence type is not supported: ${options.evidenceType}`);
+  }
+  if (!MANUAL_EVIDENCE_CLASSIFICATIONS.has(options.classification)) {
+    throw new Error(`Manual evidence classification ${options.classification} is not supported in evidence add v1.`);
+  }
+  if (options.supports.map((value) => value.trim()).filter(Boolean).length === 0) {
+    throw new Error("Manual evidence requires at least one --supports requirement id.");
+  }
+  for (const requirementId of options.supports) {
+    if (!requirementId.trim().startsWith("ISMS-P-")) {
+      throw new Error(`Manual evidence --supports must use ISMS-P requirement ids: ${requirementId}`);
+    }
+  }
+  if (!options.summary.trim()) {
+    throw new Error("Manual evidence requires --summary.");
+  }
+  if (options.validUntil && Number.isNaN(Date.parse(options.validUntil))) {
+    throw new Error(`Manual evidence --valid-until must be an ISO date: ${options.validUntil}`);
+  }
+}
+
 export async function indexEvidenceFromScan(
   workspaceRoot: string,
   options: EvidenceIndexOptions = {}
@@ -106,11 +222,7 @@ export async function indexEvidenceFromScan(
   const existingEvidence = await loadEvidenceIndex(workspaceRoot);
   const nonScanEvidence = existingEvidence.filter((item) => item.origin !== "scan");
   const evidence = [...nonScanEvidence, ...scan.signals.map((signal) => evidenceFromSignal(signal, scan.generatedAt))];
-  evidence.sort((left, right) => left.evidence_id.localeCompare(right.evidence_id, "en"));
-
-  const outputPath = join(workspaceRoot, "evidence", "index.jsonl");
-  await mkdir(join(workspaceRoot, "evidence"), { recursive: true });
-  await writeFile(outputPath, evidence.map((item) => JSON.stringify(item)).join("\n") + (evidence.length > 0 ? "\n" : ""));
+  const outputPath = await writeEvidenceIndex(workspaceRoot, evidence);
 
   return {
     outputPath,
@@ -135,6 +247,9 @@ export async function reviewEvidence(
   if (!options.rationale.trim()) {
     throw new Error("Evidence review requires --rationale.");
   }
+  const privateEvidencePath = options.decision === "accepted"
+    ? await resolvePrivateEvidenceReference(workspaceRoot, options.privateEvidencePath)
+    : undefined;
 
   const record: EvidenceReviewRecord = {
     schemaVersion: 1,
@@ -144,6 +259,7 @@ export async function reviewEvidence(
     decision: options.decision,
     ...(options.reviewer ? { reviewer: options.reviewer } : {}),
     rationale: options.rationale,
+    ...(privateEvidencePath ? { private_evidence_path: privateEvidencePath } : {}),
     ...(options.expiresAt ? { expires_at: options.expiresAt } : {})
   };
 
@@ -289,6 +405,7 @@ export async function validateEvidence(
 
   const evidence = await loadEvidenceIndex(workspaceRoot);
   const reviews = await loadEvidenceReviews(workspaceRoot);
+  await validateAcceptedReviewPrivateEvidence(workspaceRoot, reviews, issues);
   const reviewKeys = new Set(reviews.map((review) => `${review.evidence_id}\0${review.requirement_id}`));
   const reviewRequirementsByEvidence = new Map<string, Set<string>>();
   for (const review of reviews) {
@@ -308,6 +425,46 @@ export async function validateEvidence(
     issues,
     warnings
   };
+}
+
+async function validateAcceptedReviewPrivateEvidence(
+  workspaceRoot: string,
+  reviews: EvidenceReviewRecord[],
+  issues: string[]
+): Promise<void> {
+  for (const review of reviews.filter((item) => item.decision === "accepted")) {
+    const label = `accepted review ${review.evidence_id} for ${review.requirement_id}`;
+    if (!review.private_evidence_path) {
+      issues.push(`${label} requires private_evidence_path.`);
+      continue;
+    }
+
+    const normalized = review.private_evidence_path.replaceAll("\\", "/");
+    if (isAbsolute(normalized)) {
+      issues.push(`${label} private_evidence_path must be workspace-relative: ${redactPath(normalized, workspaceRoot)}`);
+      continue;
+    }
+    if (!isPrivateEvidenceRelativePath(normalized)) {
+      issues.push(`${label} must reference evidence/private/: ${normalized}`);
+      continue;
+    }
+
+    try {
+      const resolved = resolveWorkspacePath(workspaceRoot, normalized, "Accepted review private evidence path");
+      await lstat(resolved);
+      await resolvePrivateEvidenceRealPath(workspaceRoot, resolved, "Accepted review private evidence path", normalized);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        issues.push(`${label} private_evidence_path does not exist: ${normalized}`);
+        continue;
+      }
+      if (error instanceof Error) {
+        issues.push(`${label} ${error.message}`);
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 function validateEvidenceItem(
@@ -349,6 +506,14 @@ function validateEvidenceItem(
   const credentialPath = credentialLikeMetadataPath(item.metadata);
   if (credentialPath) {
     issues.push(`evidence ${item.evidence_id} contains credential-like metadata at ${credentialPath}.`);
+  }
+  const privatePathMetadata = privatePathMetadataPath(item.metadata);
+  if (privatePathMetadata) {
+    issues.push(`evidence ${item.evidence_id} contains private path metadata at ${privatePathMetadata}.`);
+  }
+  const localPathMetadata = localPathMetadataPath(item.metadata);
+  if (localPathMetadata) {
+    issues.push(`evidence ${item.evidence_id} contains local path metadata at ${localPathMetadata}.`);
   }
 }
 
@@ -393,6 +558,14 @@ export async function loadEvidenceIndex(workspaceRoot: string): Promise<Evidence
     }
     throw error;
   }
+}
+
+async function writeEvidenceIndex(workspaceRoot: string, evidence: EvidenceItem[]): Promise<string> {
+  const outputPath = join(workspaceRoot, "evidence", "index.jsonl");
+  const sorted = [...evidence].sort((left, right) => left.evidence_id.localeCompare(right.evidence_id, "en"));
+  await mkdir(join(workspaceRoot, "evidence"), { recursive: true });
+  await writeFile(outputPath, sorted.map((item) => JSON.stringify(item)).join("\n") + (sorted.length > 0 ? "\n" : ""));
+  return outputPath;
 }
 
 export async function loadEvidenceReviews(workspaceRoot: string): Promise<EvidenceReviewRecord[]> {
@@ -506,6 +679,103 @@ function looksLikeSecret(value: string): boolean {
     || /[A-Za-z0-9_=-]{32,}/.test(value);
 }
 
+function validateManualMetadata(metadata: Record<string, string>): void {
+  const credentialPath = credentialLikeMetadataPath(metadata);
+  if (credentialPath) {
+    throw new Error(`Manual evidence metadata contains credential-like metadata at ${credentialPath}.`);
+  }
+  const privatePathMetadata = privatePathMetadataPath(metadata);
+  if (privatePathMetadata) {
+    throw new Error(`Manual evidence metadata contains private path metadata at ${privatePathMetadata}.`);
+  }
+  const localPathMetadata = localPathMetadataPath(metadata);
+  if (localPathMetadata) {
+    throw new Error(`Manual evidence metadata contains local path metadata at ${localPathMetadata}.`);
+  }
+  for (const [key, value] of Object.entries(metadata)) {
+    if (isReservedManualMetadataKey(key)) {
+      throw new Error(`Manual evidence metadata contains reserved private metadata at ${key}.`);
+    }
+  }
+}
+
+function isReservedManualMetadataKey(key: string): boolean {
+  return RESERVED_MANUAL_METADATA_KEYS.has(key.toLowerCase().replace(/[^a-z0-9]/g, ""));
+}
+
+function isPrivateEvidencePathMetadata(value: string): boolean {
+  const normalized = value.trim().replaceAll("\\", "/").toLowerCase();
+  return /(^|[^a-z0-9_-])(?:\.\/|\/)?evidence\/private(?:\/|$)/.test(normalized);
+}
+
+function isLocalPathMetadata(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  const normalized = trimmed.replaceAll("\\", "/");
+  return /^[A-Za-z]:\//.test(normalized)
+    || /(?:^|[\s"'=:(])\/(?:Users|private|var)\//.test(normalized)
+    || /(?:^|[\s"'=:(])[A-Za-z]:\//.test(normalized);
+}
+
+function privatePathMetadataPath(metadata: Record<string, string | number | boolean | string[]>): string | undefined {
+  for (const [key, value] of Object.entries(metadata)) {
+    const values = Array.isArray(value) ? value : [value];
+    if (values.some((entry) => typeof entry === "string" && isPrivateEvidencePathMetadata(entry))) {
+      return key;
+    }
+  }
+  return undefined;
+}
+
+function localPathMetadataPath(metadata: Record<string, string | number | boolean | string[]>): string | undefined {
+  for (const [key, value] of Object.entries(metadata)) {
+    const values = Array.isArray(value) ? value : [value];
+    if (values.some((entry) => typeof entry === "string" && isLocalPathMetadata(entry))) {
+      return key;
+    }
+  }
+  return undefined;
+}
+
+async function hashEvidencePath(path: string, workspaceRoot: string): Promise<string> {
+  await resolvePrivateEvidenceRealPath(workspaceRoot, path, "Manual evidence private path");
+  const pathStat = await stat(path);
+  if (pathStat.isDirectory()) {
+    return hashDirectory(path, workspaceRoot);
+  }
+  return hashFile(path);
+}
+
+async function hashFile(path: string): Promise<string> {
+  return createHash("sha256").update(await readFile(path)).digest("hex");
+}
+
+async function hashDirectory(root: string, workspaceRoot: string): Promise<string> {
+  const entries = await directoryHashEntries(root, root, workspaceRoot);
+  return sha256(entries.join("\n"));
+}
+
+async function directoryHashEntries(root: string, current: string, workspaceRoot: string): Promise<string[]> {
+  const names = (await readdir(current))
+    .filter((name) => name !== ".DS_Store")
+    .sort((left, right) => left.localeCompare(right, "en"));
+  const entries: string[] = [];
+  for (const name of names) {
+    const path = join(current, name);
+    await resolvePrivateEvidenceRealPath(workspaceRoot, path, "Manual evidence private path");
+    const pathStat = await stat(path);
+    if (pathStat.isDirectory()) {
+      entries.push(...await directoryHashEntries(root, path, workspaceRoot));
+      continue;
+    }
+    const relativeFilePath = relative(root, path).replaceAll("\\", "/");
+    entries.push(`${relativeFilePath}\0${await hashFile(path)}`);
+  }
+  return entries;
+}
+
 async function latestScanPath(workspaceRoot: string): Promise<string> {
   const scansDir = join(workspaceRoot, "scans");
   let names: string[];
@@ -550,6 +820,58 @@ function resolveWorkspacePath(workspaceRoot: string, inputPath: string, label: s
     throw new Error(`${label} must be inside the workspace: ${inputPath}`);
   }
   return resolved;
+}
+
+async function resolvePrivateEvidenceReference(workspaceRoot: string, inputPath: string | undefined): Promise<string> {
+  if (!inputPath?.trim()) {
+    throw new Error("Accepted evidence review requires --private-evidence under evidence/private/.");
+  }
+  return resolvePrivateEvidencePath(workspaceRoot, inputPath, "Accepted evidence private path");
+}
+
+async function resolvePrivateEvidencePath(workspaceRoot: string, inputPath: string, label: string): Promise<string> {
+  if (isAbsolute(inputPath)) {
+    throw new Error(`${label} must be workspace-relative: ${inputPath}`);
+  }
+  const resolved = resolveWorkspacePath(workspaceRoot, inputPath, label);
+  const relativePath = relative(resolve(workspaceRoot), resolved).replaceAll("\\", "/");
+  if (!isPrivateEvidenceRelativePath(relativePath)) {
+    throw new Error(`${label} must be under evidence/private/: ${inputPath}`);
+  }
+
+  try {
+    await lstat(resolved);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`${label} does not exist: ${inputPath}`);
+    }
+    throw error;
+  }
+  await resolvePrivateEvidenceRealPath(workspaceRoot, resolved, label, inputPath);
+
+  return relativePath;
+}
+
+async function resolvePrivateEvidenceRealPath(
+  workspaceRoot: string,
+  inputPath: string,
+  label: string,
+  displayPath = inputPath
+): Promise<string> {
+  const workspace = await realpath(workspaceRoot);
+  const resolved = await realpath(inputPath);
+  const relativePath = relative(workspace, resolved).replaceAll("\\", "/");
+  if (relativePath === ".." || relativePath.startsWith("../") || isAbsolute(relativePath)) {
+    throw new Error(`${label} symlink resolves outside the workspace: ${displayPath}`);
+  }
+  if (!isPrivateEvidenceRelativePath(relativePath)) {
+    throw new Error(`${label} symlink resolves outside evidence/private/: ${displayPath}`);
+  }
+  return resolved;
+}
+
+function isPrivateEvidenceRelativePath(path: string): boolean {
+  return path === "evidence/private" || path.startsWith("evidence/private/");
 }
 
 function evidenceFromSignal(signal: ScanSignal, collectedAt: string): EvidenceItem {

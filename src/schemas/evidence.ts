@@ -59,6 +59,7 @@ export interface EvidenceReviewRecord {
   decision: ReviewDecision;
   reviewer?: string;
   rationale: string;
+  private_evidence_path?: string;
   conditions?: string[];
   expires_at?: string;
   replacement_evidence_id?: string;

@@ -39,6 +39,7 @@ After the private review is complete, record the decision with:
 isms-agent evidence review <evidence-id> \
   --requirement ISMS-P-2.10.2.cloud-admin-access-review \
   --decision accepted \
+  --private-evidence evidence/private/ISMS-P-2.10.2/access-review/<record-file> \
   --reviewer <reviewer-name> \
   --rationale "Private Cloudflare admin access review completed by the control owner."
 ```
