@@ -67,6 +67,7 @@ test("validateEvidence rejects public evidence metadata that looks like a creden
 test("validateEvidence rejects public evidence metadata that contains private or local paths", async () => {
   const dir = await mkdtemp(join(tmpdir(), "isms-agent-evidence-private-path-metadata-"));
   try {
+    const localPath = ["", "Users", "example", "private", "review.md"].join("/");
     await mkdir(join(dir, "evidence"), { recursive: true });
     await writeFile(join(dir, "evidence", "index.jsonl"), [
       JSON.stringify(evidence({
@@ -78,7 +79,7 @@ test("validateEvidence rejects public evidence metadata that contains private or
       JSON.stringify(evidence({
         evidence_id: "ev_local_path_metadata",
         metadata: {
-          note: "source /Users/example/private/review.md"
+          note: `source ${localPath}`
         }
       }))
     ].join("\n") + "\n");
@@ -1190,7 +1191,7 @@ test("addManualEvidence rejects unsafe classifications and metadata", async () =
       supports: ["ISMS-P-2.5.3.authentication-policy"],
       privateEvidencePath: "evidence/private/ISMS-P-2.5.3/review.md",
       summary: "Metadata includes unsafe absolute path value.",
-      metadata: { source: "/Users/example/private/review.md" }
+      metadata: { source: ["", "Users", "example", "private", "review.md"].join("/") }
     }), /Manual evidence metadata contains local path metadata at source/);
 
     await assert.rejects(addManualEvidence(dir, {

@@ -10,7 +10,7 @@ Pass the token through `CLOUDFLARE_API_TOKEN` only:
 
 ```bash
 CLOUDFLARE_API_TOKEN=... isms-agent scan \
-  --cloudflare evaluate.club \
+  --cloudflare example.com \
   --cloudflare-account <account_id> \
   --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
 ```
@@ -82,17 +82,17 @@ isms-agent evidence validate --public
 
 `evidence validate --public` is the release gate. A successful scan is only candidate evidence; a human review decision is still required before using it for certification readiness.
 
-## Evaluation Service Dry-Run
+## Sample Service Dry-Run
 
-For `apps/evaluation`, run the scanner from an ISMS-P workspace that contains the service under `project/evaluation`:
+For a service copied into an ISMS-P workspace, run the scanner against a target directory such as `project/sample-service`:
 
 ```bash
 isms-agent scan \
   --local \
-  --target project/evaluation \
+  --target project/sample-service \
   --include app,services,db,lib,specs,wrangler.toml \
   --exclude __tests__ \
-  --cloudflare evaluate.club \
+  --cloudflare example.com \
   --cloudflare-account <account_id> \
   --cloudflare-products zone,access,waf,dns,workers,r2,hyperdrive,api-gateway
 ```
@@ -113,10 +113,6 @@ isms-agent evidence validate --public
 ```
 
 Review the generated warnings. Warnings about missing human review decisions are acceptable in dry-run mode, but they must be resolved before treating the evidence as certification-ready.
-
-## Dogfood Note: 2026-05-29
-
-The evaluation-service dry run confirmed that Cloudflare scanner evidence remains candidate evidence. Bulk review records `needs_followup` by default, reruns skip unchanged latest decisions, and public validation/report generation do not expose private review rationale.
 
 ## Official References
 

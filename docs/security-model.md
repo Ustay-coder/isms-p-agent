@@ -43,10 +43,6 @@ The default workspace keeps real evidence local:
 
 These paths are ignored by default. Public artifacts should be produced through `isms-agent report --public`, `isms-agent evidence export-public`, and `isms-agent evidence validate --public`.
 
-## Dogfood Note: 2026-05-29
-
-Small-batch control expansion keeps real evidence local. The public repository includes curated control knowledge and public-safe documentation, while `evidence/private/`, `reviews/`, `scans/`, and `reports/` remain local workspace state unless a public-safe export command creates redacted output.
-
 ## No Customer Or Personal Data Collection
 
 The MVP must not collect customer records, end-user records, employee personal data, incident payloads containing personal data, ticket bodies, chat exports, or other personal information.
@@ -79,3 +75,9 @@ Human approval is required before:
 - deciding that candidate evidence is current, complete, and acceptable.
 
 Technical configuration alone is not proof of control operation. Evidence existence is not control satisfaction.
+
+## Public Repository Boundary
+
+The public repository includes source code, synthetic fixtures, public documentation, and reviewed control-pack content. It must not include real operational evidence, private scanner output, private review overlays, customer records, account identifiers, local workspace paths, or service-specific dogfood analysis.
+
+Public examples should be produced from synthetic fixtures or redacted through the explicit public export commands. Any public artifact that depends on real service material must be reviewed as a separate documentation change before publication.

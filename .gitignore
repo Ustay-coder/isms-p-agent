@@ -1,8 +1,30 @@
 dist/
 node_modules/
-scans/
-reports/
-reviews/
+
+# Generated local ISMS-P workspaces and private evidence.
+/.omx/
+/raw/
+/wiki/
+/controls/
+/project/
+/connectors/
+/scans/
+/reports/
+/reviews/
+/evidence/
+AGENTS.md
+isms-agent.config.json
+log.md
+
+# Backward-compatible explicit private evidence paths.
+/evidence/private/
+/reviews/
+/scans/
+/reports/
 evidence/private/
 evidence/index.jsonl
 evidence/public-index.jsonl
+
+# Local secret/private scratch files.
+*.secret.*
+*.private.*
